@@ -1,0 +1,22 @@
+# Kích thước khung hình chuẩn; box luôn tính theo ảnh sau resize.
+scene:
+  resize_width: 640
+  resize_height: 480
+  annotate_step: 5
+  roi: null
+  door_line: [320, 0, 320, 480]
+detector:
+  min_area: 400
+  mog2_history: 500
+tracker:
+  max_lost: 30
+  min_points: 4
+events:
+  crossing_margin: 5
+features:
+  orb_nfeatures: 500
+  sift_nfeatures: 500
+reid:
+  match_threshold: 0.7
+benchmark:
+  warmup_frames: 10
