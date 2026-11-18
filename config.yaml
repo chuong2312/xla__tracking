@@ -24,8 +24,23 @@ detector:
   max_ratio: 5.0
   use_hog_baseline: false
 tracker:
-  max_lost: 30
+  # Lucas-Kanade: cửa sổ lớn hơn bù dịch nhiều pixel; pyramid giảm ảnh hưởng chuyển động vừa.
+  winSize: [21, 21]
+  maxLevel: 3
+  criteria: [3, 30, 0.01]
+  use_fb_check: true
+  fb_thresh: 1.0
   min_points: 4
+  max_corners: 100
+  quality_level: 0.01
+  min_distance: 5.0
+  block_size: 7
+  refresh_every: 5
+  matcher: hungarian
+  iou_gate: 0.1
+  confirm_hits: 3
+  max_misses: 10
+  box_update_alpha: 0.2
 events:
   crossing_margin: 5
 features:

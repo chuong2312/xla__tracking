@@ -41,3 +41,14 @@ python -m src.metrics reid outputs/global_ids.csv data/synthetic/cross/gt_reid.c
 ```
 
 Detection chỉ chấm frame có GT. Tracking chỉ xét track có `state=confirmed`. Re-ID tính từng cặp camera trong `gt_reid.csv`; thiếu global ID hoặc ID `-1` được tính là không đúng. Rank-1 chọn candidate có score cao nhất trong method chỉ định. Metrics trả số lượng và tỷ lệ; không tự tạo ground truth hay kết quả thực nghiệm.
+
+## Tracking
+
+Chạy MOG2 detector và Lucas-Kanade tracker trên cùng frame đã resize một lần:
+
+```bash
+python run_tracking.py --video data/synthetic/cross/cam_a/video.mp4 --out outputs/tracks.csv --debug-video outputs/tracking_debug.mp4
+python -m src.metrics track outputs/tracks.csv data/synthetic/cross/gt_tracking.csv
+```
+
+Tracker dùng LK để dịch từng box theo median displacement của feature points, kiểm tra Forward-Backward, rồi gán detection bằng Hungarian và IoU gate (`matcher: greedy` bật baseline greedy). Track mới bắt đầu tentative và chỉ confirmed sau số hit liên tiếp trong `tracker.confirm_hits`; ID tăng đơn điệu, không tái sử dụng. Tham số LK, feature, matching, vòng đời và hệ số cập nhật box đều ở section `tracker` trong `config.yaml`.
