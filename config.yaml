@@ -35,3 +35,8 @@ reid:
   match_threshold: 0.7
 benchmark:
   warmup_frames: 10
+
+metrics:
+  # Một cặp chỉ khớp nếu IoU lớn hơn hoặc bằng ngưỡng này.
+  iou_threshold: 0.5
+  mostly_tracked_ratio: 0.8

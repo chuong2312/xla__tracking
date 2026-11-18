@@ -29,3 +29,15 @@ python run_detector.py --video data/synthetic/cross/cam_a/video.mp4 --out output
 Các tham số nền, morphology, diện tích và tỷ lệ hình học nằm trong section `detector` của `config.yaml`. `learningRate: 0.001` được đặt thấp để nền thích nghi chậm, giảm khả năng MOG2 hấp thụ người đứng yên; đổi lại, bóng ma chuyển động có thể tồn tại lâu hơn. `use_hog_baseline` mặc định `false`; HOG+SVM là baseline cổ điển tùy chọn, không thay MOG2.
 
 `scene.roi` là vùng giữ lại dạng `[x1, y1, x2, y2]`; `null` nghĩa là dùng toàn ảnh. `scene.ignore_regions` là danh sách vùng che dạng `[[x, y, w, h], ...]`. ROI và vùng che đều tính trên ảnh sau resize; pixel vùng che bị đưa về 0 trước connected components và trong mask trả về bởi `get_foreground_mask()`.
+
+## Đánh giá
+
+Metrics đọc các hợp đồng CSV hiện có và dùng Hungarian Algorithm trên chi phí `1 - IoU` để ghép box theo frame. Ngưỡng IoU mặc định `metrics.iou_threshold` là 0.5; cặp được chấp nhận khi IoU lớn hơn hoặc bằng ngưỡng. `metrics.mostly_tracked_ratio` đặt tỷ lệ frame GT tối thiểu cho chỉ số mostly tracked.
+
+```bash
+python -m src.metrics det outputs/detections.csv data/synthetic/cross/gt_tracking.csv
+python -m src.metrics track outputs/tracks.csv data/synthetic/cross/gt_tracking.csv
+python -m src.metrics reid outputs/global_ids.csv data/synthetic/cross/gt_reid.csv --scores outputs/reid_scores.csv --method ORB
+```
+
+Detection chỉ chấm frame có GT. Tracking chỉ xét track có `state=confirmed`. Re-ID tính từng cặp camera trong `gt_reid.csv`; thiếu global ID hoặc ID `-1` được tính là không đúng. Rank-1 chọn candidate có score cao nhất trong method chỉ định. Metrics trả số lượng và tỷ lệ; không tự tạo ground truth hay kết quả thực nghiệm.
