@@ -4,10 +4,25 @@ scene:
   resize_height: 480
   annotate_step: 5
   roi: null
+  ignore_regions: []
   door_line: [320, 0, 320, 480]
 detector:
+  # Learning rate thấp giúp hạn chế MOG2 hấp thụ người đứng yên.
+  history: 500
+  varThreshold: 16.0
+  learningRate: 0.001
+  blur_kernel: 3
+  opening_kernel: 3
+  opening_iterations: 1
+  closing_kernel: 5
+  closing_iterations: 2
+  dilation_kernel: 3
+  dilation_iterations: 1
   min_area: 400
-  mog2_history: 500
+  max_area: 100000
+  min_ratio: 1.2
+  max_ratio: 5.0
+  use_hog_baseline: false
 tracker:
   max_lost: 30
   min_points: 4
