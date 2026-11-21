@@ -41,6 +41,18 @@ tracker:
   confirm_hits: 3
   max_misses: 10
   box_update_alpha: 0.2
+  # IoU legacy vẫn dùng làm bằng chứng blob bổ sung.
+  blob_iou: 0.2
+  # Coverage tối thiểu của từng track để detection được xem là chứa track đó.
+  blob_track_coverage: 0.75
+  # Tâm hai track phải cách nhau ít nhất tỷ lệ này của đường chéo box nhỏ hơn.
+  blob_center_separation: 0.35
+  # Số frame tối đa giữ track sau khi blob cuối cùng được xác nhận.
+  blob_grace_frames: 35
+  # Histogram HSV H-S dùng 16 bins cho Hue và 16 bins cho Saturation.
+  hist_bins: [16, 16]
+  # Tương quan histogram tối thiểu để cho phép phục hồi ID sau khi blob tách.
+  hist_corr_min: 0.7
 events:
   crossing_margin: 5
 features:

@@ -23,7 +23,7 @@ def main() -> None:
             for frame_idx,frame in iter_video(args.video,size):
                 detections=detector.detect(frame)
                 gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-                tracks=tracker.update(gray,detections)
+                tracks=tracker.update(gray,detections,frame_bgr=frame)
                 for track in tracks:
                     x,y,w,h=track.box; writer.writerow([frame_idx,track.id,track.state,x,y,w,h,len(track.points)])
                 if args.debug_video:
