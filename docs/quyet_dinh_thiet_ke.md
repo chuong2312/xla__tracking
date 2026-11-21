@@ -131,3 +131,75 @@
 - **Hệ quả:**
   - Không phải phiên bản OpenCV nào cũng có ASIFT. Nhóm đã chạy thử thành công trên OpenCV 5.1.0, nên phải ghim đúng phiên bản này.
   - ASIFT chậm hơn và sinh nhiều keypoint hơn hẳn. Trên crop 128×256, ASIFT ra 8.206 keypoint trong 64 ms, còn SIFT ra 501 keypoint trong 19 ms. Vì vậy ASIFT chỉ chạy trên các crop của gallery.
+
+## QĐ-15: File đáp án có thêm cột `occluded` và `keyframe`
+- **Trạng thái:** đã làm (2026-11-21).
+- **Bối cảnh:** XLA 3.3 yêu cầu:
+  - ghi rõ người bị che hay không;
+  - chỉ chấm precision/recall của detector trên frame gán tay;
+  - bỏ qua frame bị che nặng.
+- **Quyết định:** đáp án có các cột `frame,gt_id,x,y,w,h,occluded,keyframe`.
+  - `occluded`: 0 là không che, 1 là che một phần, 2 là che nặng.
+  - `keyframe`: 1 là box gán tay, 0 là box nội suy. Frame nội suy lấy mức che lớn hơn của hai keyframe hai bên.
+  - Công cụ gán nhãn có thêm phím `o` để đổi mức che.
+- **Hệ quả:**
+  - `detection_pr` chỉ chấm frame mà mọi box đều gán tay và không box nào bị che nặng.
+  - File đáp án cũ (không có hai cột này) vẫn đọc và chấm được như trước.
+
+## QĐ-16: Video tổng hợp v2 vẽ theo tọa độ sàn và homography
+- **Trạng thái:** đã làm (2026-11-21).
+- **Bối cảnh:** chưa có video thật. Video tổng hợp cũ chỉ có đáp án cho một camera, các hộp màu trên nền phẳng, và chỉ 3 "người".
+- **Quyết định:**
+  - Đặt 4 người trên một mặt sàn tính bằng mét; mỗi camera là một homography sàn → ảnh.
+  - Vẽ người ở xa trước để có che khuất tự nhiên.
+  - Dùng bản đồ "ai ở pixel nào" để tính box phần nhìn thấy và mức che.
+  - 5 kịch bản: `s1`, `s2`, `s3`, `s4`, `door`.
+- **Lý do:** có đáp án chính xác cho cả hai camera, cho Re-ID (ai là ai) và cho sự kiện qua cửa, cùng với homography A → B biết trước để kiểm tra công cụ click điểm sàn.
+- **Hệ quả:** người là hình chữ nhật đi thẳng đều, nên kết quả trên video tổng hợp chỉ dùng để kiểm tra code. Tham số phải hiệu chỉnh lại trên video thật.
+
+## QĐ-17: Cảnh cửa dùng bố trí "hành lang + cửa"
+- **Trạng thái:** đã chốt cho cảnh cửa (2026-11-21). Các kịch bản S1–S4 vẫn theo QĐ-02 (hai camera cùng nhìn một khu vực). Nếu sau này muốn dùng bố trí này cho cả đồ án thì chỉ cần sửa kế hoạch quay; code đã hỗ trợ cả hai.
+- **Bối cảnh:** nhóm đề xuất bố trí giống camera an ninh thật: camera A ở đầu hành lang thấy người đi tới rồi rẽ vào cửa; camera B gắn đối diện cửa, thấy người đi qua cửa.
+- **Quyết định:** quay cảnh cửa theo bố trí này ([ke_hoach_quay_video.md](ke_hoach_quay_video.md), mục 3b). Video tổng hợp có kịch bản `hanh_lang_cua` mô phỏng đúng bố trí này.
+- **Lý do:**
+  - Sát thực tế.
+  - Camera B nhìn thẳng cửa nên đếm VÀO/RA tốt.
+  - Có thêm một cách nhận ra cùng một người mà không cần nhìn quần áo (QĐ-18).
+- **Hệ quả:**
+  - Hai camera chỉ chung vùng quanh cửa, nên homography chỉ dùng được ở vùng đó.
+  - Camera A nhìn cửa rất nghiêng, nên đếm ở camera A kém tin cậy hơn camera B.
+  - Đồng bộ giờ trở thành bắt buộc.
+
+## QĐ-18: Ghép người giữa hai camera bằng thời gian qua cửa
+- **Trạng thái:** đã làm (2026-11-21), `src/door_matching.py`.
+- **Bối cảnh:** XLA 2.11 gợi ý dùng thời gian làm ràng buộc khi các camera không cùng nhìn một khu vực. Với bố trí QĐ-17, thời điểm qua cửa là tín hiệu rất rõ.
+- **Quyết định:** hai lượt qua cửa **cùng chiều**, lệch nhau không quá `reid.door_event_max_gap_s` giây, được phép ghép. Ghép một-một bằng Hungarian để tổng độ lệch nhỏ nhất.
+- **Lý do:** đơn giản, không dùng màu, nên giải được cả trường hợp hai người mặc giống nhau.
+- **Hệ quả:**
+  - Bó tay khi hai người qua cửa gần như cùng lúc; khi đó kết hợp thêm ngoại hình và homography.
+  - Trong báo cáo, kết quả "chỉ dùng thời gian" được báo riêng, giống cách báo riêng kết quả homography.
+
+## QĐ-19: Cách tính và gộp điểm giống nhau khi nhận dạng lại
+- **Trạng thái:** đã làm (2026-11-21). Các con số phải hiệu chỉnh lại trên dev thật.
+- **Quyết định:**
+  - **Điểm keypoint** = 0 nếu có ít hơn 6 cặp khớp tốt, ngược lại `min(1, n/30)`. Lấy cặp ảnh mẫu tốt nhất giữa hai gallery.
+  - **Điểm màu** = 1 − trung bình khoảng cách Bhattacharyya của thân trên và thân dưới.
+  - **Điểm sàn** = trung bình `exp(−d²/2σ²)`.
+  - **Gộp** bằng trung bình có trọng số 0,4 / 0,4 / 0,2, chỉ tính các điểm đang có.
+  - Ghép bằng Hungarian; **ngưỡng 0,3**.
+  - Luôn báo riêng "chỉ ngoại hình" và "ngoại hình + sàn".
+- **Lý do:**
+  - Đổi số cặp khớp thành điểm 0–1 có "mức đủ", để không bị phụ thuộc vào tổng số keypoint.
+  - Ngưỡng 0,3 nằm giữa điểm của cùng người (0,42–0,94) và khác người (≤ 0,14) trên video tổng hợp.
+
+## QĐ-20: Giai đoạn 2 bắt đầu; tracker mới đặt trong file riêng, tracker cũ giữ lại
+- **Trạng thái:** đã làm (2026-11-21). Nhóm yêu cầu làm phần hệ thống trước, chưa cần dữ liệu thật.
+- **Quyết định:**
+  - Hệ thống mới gồm `src/detection.py`, `src/people_tracker.py`, `src/pipeline.py` và `run.py`.
+  - Tracker cũ (`src/tracker.py`) cùng detector cũ được giữ nguyên, để báo cáo có thể so sánh cũ với mới.
+  - Hệ thống được thử trên video tổng hợp v2.
+- **Ba quy tắc của tracker**, rút ra khi thử ([11_tracker_moi.md](11_tracker_moi.md)):
+  1. Box mới to hoặc nhỏ bất thường **và** chồng lên người khác thì không lấy vị trí, kích thước từ box đó.
+  2. Chỉ gộp các mảnh nằm trên dưới nhau.
+  3. Khi hai người dính nhau, chỉ người đứng trước giữ Lucas-Kanade. Thí nghiệm so sánh: MOTA 0,758, IDF1 0,84, tốt nhất trong 3 cách thử.
+- **Hệ quả:** `src/metrics.py` giờ chấm cả các trạng thái `merged` và `static` (`SCORED_TRACK_STATES`), vì tracker mới vẫn báo vị trí người trong hai trạng thái đó.

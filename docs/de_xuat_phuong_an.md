@@ -2,7 +2,7 @@
 
 > **Trạng thái:** đề xuất, ngày 2026-11-21; cùng ngày đã cập nhật theo câu trả lời của thầy (mục 3). Code hiện tại (tracker LK cũ, detector MOG2) **chưa** theo kiến trúc này. Việc viết lại bắt đầu từ giai đoạn 2 (mục 7).
 > **Căn cứ:** mọi lựa chọn bám theo `XLA.md` (bản review roadmap). Ký hiệu *XLA 2.4* nghĩa là mục 2.4 trong file đó.
-> **Tài liệu đi kèm:** [cau_hoi_thay.md](cau_hoi_thay.md) · [ke_hoach_quay_video.md](ke_hoach_quay_video.md) · [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md) · [hoi_dap_bao_ve.md](hoi_dap_bao_ve.md)
+> **Tài liệu đi kèm:** [cau_hoi_thay.md](cau_hoi_thay.md) · [ke_hoach_quay_video.md](ke_hoach_quay_video.md) · [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md) · [hoi_dap_bao_ve.md](hoi_dap_bao_ve.md) · [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md) (gặp từ khó thì tra ở đây)
 
 ## 1. Đồ án làm gì (đọc phần này trước)
 
@@ -66,6 +66,7 @@ video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người
 - Quay lại toàn bộ dữ liệu bằng chân máy.
 - **2 camera chồng vùng nhìn** (XLA 2.11). Code vẫn thiết kế để chạy được tới 4 camera.
 - Mỗi cảnh có **4 người**.
+- **Cảnh cửa dùng bố trí "hành lang + cửa"** (QĐ-17): camera A ở đầu hành lang, camera B đối diện cửa. Hai camera được ghép bằng thời gian qua cửa (QĐ-18, [07_ghep_su_kien_cua.md](07_ghep_su_kien_cua.md)).
 - **Viết lại tracker**, không sửa tiếp bản cũ.
 - Auto SIFT: làm **cả `sift_auto` lẫn ASIFT**, rồi so với SIFT thường.
 - Ưu tiên số 1 là **hiểu và bảo vệ được**.
@@ -324,7 +325,7 @@ Nhóm viết code cùng AI, nên mọi phần đều phải **giải thích đư
 1. **Tài liệu** `docs/NN_<module>.md`, theo thứ tự: bài toán → thuật toán → công thức → tham số → khi nào hỏng → thầy có thể hỏi gì.
 2. **Lệnh `--explain`** xuất ảnh minh họa từng bước. Ví dụ: frame → nền → hiệu → mask → box; các điểm LK bị loại; ma trận tương đồng; các cặp SIFT khớp. Ảnh này dùng luôn cho báo cáo.
 3. **Câu hỏi mới** bổ sung vào [hoi_dap_bao_ve.md](hoi_dap_bao_ve.md).
-4. **Buổi giải thích:** Claude giải thích lại module trong chat và hỏi nhóm 3–5 câu tự kiểm tra. Nhóm chưa trả lời được thì chưa sang module tiếp theo.
+4. **Buổi giải thích:** Claude giải thích lại module trong chat và chỉ hỏi 1–2 câu trọng tâm mà khi bảo vệ bắt buộc phải trả lời được. Không hỏi các câu chi tiết.
 
 ## 7. Lộ trình
 

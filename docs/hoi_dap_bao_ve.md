@@ -1,6 +1,7 @@
 # Hỏi đáp chuẩn bị bảo vệ
 
 > Đây là bản khởi đầu. Nội dung lấy từ XLA mục 5 và mục 2.13, cộng thêm các câu về thiết kế mới trong [de_xuat_phuong_an.md](de_xuat_phuong_an.md). Mỗi module làm xong sẽ bổ sung câu hỏi vào đây.
+> Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 > **Cách ôn:** che phần trả lời, tự nói câu trả lời thành lời, rồi so lại. Câu nào chưa nói trôi chảy thì đánh dấu để ôn tiếp.
 > Các câu thuộc phần chưa cài (đánh dấu *chưa cài*) chỉ dùng được sau khi module đó xong.
 
@@ -118,7 +119,7 @@ Thầy không nói rõ "auto SIFT" là nghĩa nào, nên nhóm làm cả hai và
 **Vì sao không dùng RANSAC làm mặc định?** *(chưa cài)*
 `estimateAffinePartial2D` giả định hai tập điểm có quan hệ đồng dạng. Giả định này đúng với vật phẳng và cứng, nhưng không đúng với cơ thể người nhìn từ hai góc (tay vung, chân bước). Mặc định nhóm dùng ràng buộc dọc đơn giản hơn: đầu phải khớp với đầu. RANSAC có trong ablation, và kết quả so sánh được báo cáo (XLA 2.8).
 
-**Homography mặt sàn là gì? Nó có luôn ghép đúng không?** *(chưa cài)*
+**Homography mặt sàn là gì? Nó có luôn ghép đúng không?** *(đã cài, xem [02_homography_san.md](02_homography_san.md))*
 Homography là ma trận 3×3 ánh xạ một điểm trên mặt sàn từ ảnh camera A sang ảnh camera B. Ma trận này tính từ ít nhất 4 điểm mốc click tay. Nhóm chiếu điểm chân người từ A sang B rồi so vị trí.
 
 Đây chỉ là **thông tin hình học bổ trợ**, không phải lúc nào cũng đúng. Nó dựa trên giả định mặt sàn gần phẳng, và có thể sai khi:
@@ -139,7 +140,7 @@ Nếu thiếu track, hoặc có ngưỡng "không khớp ai", thì điều kiệ
 
 ## Đánh giá (H)
 
-**MOTA và IDF1 khác nhau thế nào?** *(chưa cài)*
+**MOTA và IDF1 khác nhau thế nào?** *(đã cài, xem [06_cham_diem_mota_idf1.md](06_cham_diem_mota_idf1.md))*
 - `MOTA = 1 − (bỏ sót + báo nhầm + đổi ID) / tổng số GT`. Chỉ số này nặng về khả năng phát hiện.
 - IDF1 là điểm F1 của các phát hiện mang đúng ID, sau khi ghép một-một mỗi người với một track. Chỉ số này nặng về khả năng giữ danh tính.
 
@@ -148,3 +149,44 @@ Nếu thiếu track, hoặc có ngưỡng "không khớp ai", thì điều kiệ
 
 **Tách dev/test thế nào? Có hạn chế gì?**
 Mỗi kịch bản quay 2 lượt: một lượt để hiệu chỉnh tham số (dev), một lượt chỉ dùng để đánh giá (test). Hạn chế là cả hai lượt dùng cùng 4 người, nên kết quả Re-ID có thể lạc quan.
+
+## Các module đã làm (01–06)
+
+**Sao không dùng luôn video thật mà phải làm video tổng hợp?** ([01](01_video_tong_hop.md))
+Video tổng hợp có đáp án chính xác tuyệt đối, và tạo lại được giống hệt bằng cùng một seed. Vì vậy nó dùng để kiểm tra code có làm đúng ý không. Video thật mới dùng để đánh giá chất lượng; kết quả trên video tổng hợp không được báo cáo như kết quả thật.
+
+**Trong video tổng hợp, máy biết người bị che bao nhiêu bằng cách nào?** ([01](01_video_tong_hop.md))
+Máy vẽ người ở xa trước, người ở gần sau, và giữ một "bản đồ ai ở pixel nào". Phần nhìn thấy của mỗi người là các pixel còn mang mã của họ. Tỉ lệ nhìn thấy từ 90% trở lên là mức 0, từ 50% đến dưới 90% là mức 1, dưới 50% là mức 2.
+
+**Vì sao homography cần ít nhất 4 điểm?** ([02](02_homography_san.md))
+H là ma trận 3×3 nhưng chỉ có 8 ẩn, vì nhân H với cùng một số thì kết quả chiếu không đổi. Mỗi cặp điểm cho 2 phương trình, nên cần 4 cặp. Có nhiều hơn 4 cặp thì dùng RANSAC để loại cặp bị click nhầm.
+
+**Sai số chiếu lại là gì?** ([02](02_homography_san.md))
+Là khoảng cách (pixel) giữa điểm ở camera A sau khi chiếu sang camera B và điểm mình đã click ở camera B. Click chuẩn thì sai số khoảng 1–2 px.
+
+**Cho một ví dụ ghép tham lam sai mà Hungarian đúng.** ([03](03_ghep_cap_hungarian.md))
+Bảng chi phí [[1, 2], [2, 100]]. Ghép tham lam lấy ô 1 trước, rồi buộc phải lấy ô 100, tổng 101. Hungarian lấy 2 + 2, tổng 4.
+
+**Giá trị `acceleration_std_px = 0,1` của Kalman chọn thế nào?** ([04](04_kalman.md))
+Quét lưới 5 giá trị trên quỹ đạo của video tổng hợp, đo độ lệch sau 30 frame bị che: giá trị cũ 0,5 lệch 24,7 px, còn 0,1 lệch 6,9 px. Nhóm không chọn giá trị nhỏ nhất, vì người thật hay rẽ; khi có video dev thật sẽ hiệu chỉnh lại.
+
+**Vì sao bộ đếm cửa dùng điểm chân và có vùng đệm?** ([05](05_dem_qua_cua.md))
+Cửa nằm trên sàn, và chân luôn chạm sàn bất kể người cao hay thấp. Vùng đệm để người đứng rung ngay trên vạch không bị đếm vào, ra liên tục.
+
+**Hai người qua cửa cùng lúc theo hai chiều thì sao?** ([05](05_dem_qua_cua.md))
+Mỗi track được theo dõi riêng, nên vẫn đếm đúng. Trên kịch bản `door`, người 3 và người 4 qua cửa cùng ở frame 229 và vẫn đếm đúng VÀO 2, RA 2. Chỉ hỏng khi hai người dính thành một box.
+
+**MOTA có thể âm không?** ([06](06_cham_diem_mota_idf1.md))
+Có, khi tổng số bỏ sót, báo nhầm và đổi tên nhầm nhiều hơn tổng số box trong đáp án. Thường do báo nhầm rất nhiều.
+
+**Với cảnh cửa, làm sao biết người ở camera A là ai ở camera B?** ([07](07_ghep_su_kien_cua.md))
+Hai camera đã đồng bộ giờ, nên một lượt VÀO ở camera A và một lượt VÀO ở camera B xảy ra gần như cùng lúc được coi là cùng một người. Nhóm ghép các lượt cùng chiều theo độ lệch thời gian bằng Hungarian. Khi hai người qua cửa gần như cùng lúc thì phải dựa thêm vào ngoại hình và vị trí trên sàn.
+
+**Làm sao biết người ở camera A là ai ở camera B?** ([09](09_nhan_dang_lai.md))
+Mỗi cặp (người ở A, người ở B) được tính ba điểm giống nhau: keypoint, màu quần áo, và vị trí sàn (bổ trợ). Gộp ba điểm lại, rồi ghép một-một bằng Hungarian; cặp có điểm dưới ngưỡng thì để "không khớp ai". Kết quả "chỉ ngoại hình" và "ngoại hình + sàn" được báo cáo riêng.
+
+**Hệ thống chạy thế nào từ đầu đến cuối?** ([12](12_he_thong.md))
+Mỗi camera làm 3 việc: tìm người bằng trừ nền, bám người bằng Kalman + Lucas-Kanade + Hungarian, và đếm qua cửa. Sau đó, mô tả ngoại hình từng người và ghép người giữa hai camera; với cảnh cửa thì ghép thêm theo thời gian qua cửa. Lệnh `run.py` làm tất cả các bước và tự chấm điểm nếu có đáp án.
+
+**Hai người đi qua nhau, tracker làm sao giữ đúng tên?** ([11](11_tracker_moi.md))
+Tracker nhận ra box chứa 2 người trước khi ghép, và không dùng box đó. Trong lúc dính nhau, người đứng trước (gần camera hơn) vẫn bám bằng Lucas-Kanade, người đứng sau đi theo Kalman. Khi tách ra thì ghép lại bằng vị trí đoán, ảnh mẫu và màu áo.

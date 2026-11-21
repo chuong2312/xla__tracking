@@ -2,6 +2,7 @@
 
 > **Mục tiêu:** quay dữ liệu đúng giả định "camera cố định" để trừ nền hoạt động được, đủ kịch bản cho mọi phần đánh giá, và có ground truth cho dev và test tách biệt.
 > **Căn cứ:** XLA 2.11, 2.12, 2.15, 3.1, 3.3, 3.5, 3.6, 3.7.
+> **Video thật lấy trên mạng để thử thêm:** xem [tim_video_thuc_te.md](tim_video_thuc_te.md).
 > **Lý do phải quay lại:** video S1 hiện tại được quay cầm tay. Camera trôi khoảng 25 px trong 15 giây, nên trừ nền bắt toàn bộ các cạnh tường (xem QĐ-01 trong [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md)).
 
 ## 1. Chuẩn bị
@@ -35,6 +36,35 @@ Cài cả hai máy giống nhau:
 - Với cảnh cửa: ít nhất một camera phải thấy rõ cửa và lối đi qua cửa.
 - Chụp lại ảnh vị trí chân máy để quay lại đúng như cũ khi cần.
 
+## 3b. Bố trí riêng cho cảnh cửa: hành lang + cửa (QĐ-17)
+
+Cảnh cửa không dùng kiểu "hai camera cùng nhìn một khu vực", mà dùng bố trí giống camera an ninh thật:
+
+```
+             tường đối diện cửa              [Cam B] nhìn thẳng vào cửa
+                                                │
+ [Cam A] ●  →  →  người đi dọc hành lang  →  ↘  ▼
+ (đầu/góc hành lang)                          ↘
+ tường có cửa ──────────────────────────────[ CỬA ]──────
+                                               phòng
+```
+
+- **Camera A** đặt ở đầu hoặc góc hành lang, nhìn dọc hành lang: thấy người đi tới rồi rẽ vào cửa.
+- **Camera B** gắn ở tường đối diện cửa, nhìn thẳng vào cửa: phải thấy **trọn lối cửa và chân người** khi đi qua. Đếm cửa chủ yếu dựa vào camera này.
+- **Vỗ tay ngay ở cửa** lúc bắt đầu, chỗ cả hai camera cùng thấy. Với bố trí này, đồng bộ giờ là **bắt buộc**, vì hai camera được ghép bằng thời gian qua cửa ([07_ghep_su_kien_cua.md](07_ghep_su_kien_cua.md)).
+- Dán **ít nhất 4 điểm băng keo** ở vùng sàn quanh cửa mà cả hai camera cùng thấy, để dùng homography.
+
+Mỗi lượt quay dài 30–40 giây, gồm đủ các tình huống sau:
+
+| Tình huống | Thử điều gì |
+|---|---|
+| 1 người đi dọc hành lang rồi rẽ vào cửa | Trường hợp cơ bản |
+| 2 người vào **lần lượt**, cách nhau 1–2 giây | Ghép đúng thứ tự theo thời gian |
+| 2 người qua cửa **gần như cùng lúc** (cùng chiều, hoặc một vào một ra) | Trường hợp khó; phải nhờ ngoại hình |
+| 1 người **đi ngang qua cửa mà không vào** | Không được đếm nhầm |
+| 1 người từ trong phòng **đi ra** | Đếm RA |
+| 1 người **dừng lại ở cửa** vài giây rồi mới vào | Độ lệch thời gian giữa hai camera lớn hơn |
+
 ## 4. Quy trình mỗi lượt quay
 
 1. Bấm quay cả hai máy.
@@ -55,7 +85,7 @@ S1–S4 lấy theo roadmap gốc. Nếu roadmap gốc mô tả khác thì sửa 
 | S2 | Đi giao cắt và che khuất nhau | D (blob gộp và tách) | 2 |
 | S3 | Một người **đứng yên ít nhất 5 giây** giữa khung | C, D (trạng thái `static`) | 2 |
 | S4 | Trong 4 người có **2 người mặc áo cùng tông màu**; hai người này đi giao cắt nhau | D, G (không dựa vào màu) | 2 |
-| Cửa (**bắt buộc**) | Vào và ra qua cửa, có lúc **2 người qua cùng lúc theo hai chiều** | E (thầy yêu cầu) | 2 |
+| Cửa (**bắt buộc**) | Quay theo **bố trí hành lang + cửa** (mục 3b), gồm đủ các tình huống liệt kê ở đó | E (thầy yêu cầu), ghép hai camera qua cửa | 2 |
 | S5 *(tùy chọn)* | Như S1 nhưng hai camera lệch góc rất lớn | Ablation góc camera (XLA 3.5) | 1–2 |
 
 Tối thiểu cần 5 kịch bản × 2 lượt × 2 camera = **20 video**.

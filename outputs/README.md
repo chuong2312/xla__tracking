@@ -5,6 +5,7 @@ Mọi thứ trong thư mục này đều sinh lại được từ code và data,
 | Đường dẫn | Nội dung |
 |---|---|
 | `detections.csv`, `detector_debug.mp4`, `tracks.csv`, `tracking_debug.mp4`, `gt_check.mp4` | Output mặc định của các lệnh trong README gốc. Mỗi lần chạy lại sẽ ghi đè. |
+| `explain/` | Ảnh minh họa của các module mới (`video_tong_hop`, `homography_san`, `ghep_cap`, `kalman`, `dem_qua_cua`). Tạo lại bằng các lệnh trong README gốc. |
 | `smoke/` | Lần chạy thử công cụ gán nhãn `tools/annotate.py`. |
 | `synthetic_d2/00_initial/` | Lần chạy đầu của tracker trên video tổng hợp `cross` và `occlude`. |
 | `synthetic_d2/01–03_corrective_pass*/` | Các vòng sửa tracker. Mỗi vòng gồm `tracks.csv` và video debug. |
