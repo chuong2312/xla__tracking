@@ -318,3 +318,32 @@
   - Trên EPFL hai mức ngang nhau (A tốt hơn ở 0,0005, B tốt hơn ở 0,001).
 - **Đã thử và bỏ:** trừ nền trung vị có cập nhật chọn lọc trên EPFL: 14–20% ảnh bị coi là foreground (báo nhầm nhiều).
 - **Rủi ro:** khi ánh sáng thay đổi nhanh (bật đèn, mây che nắng qua cửa sổ), nền theo không kịp và báo nhầm cả mảng lớn trong vài chục giây.
+
+## QĐ-29: Áp dụng kết quả hai vòng hiệu chỉnh tham số
+- **Trạng thái:** đã làm (2026-11-22), bằng `tools/hieu_chinh.py`. Chi tiết từng lượt ở [14](14_hieu_chinh_tham_so.md).
+- **Cách làm:** mỗi vòng đổi riêng từng tham số (2 giá trị quanh giá trị đang dùng). Một giá trị chỉ được giữ khi **cả hai** điều kiện đúng:
+  - điểm trên 5 cảnh tổng hợp, `(MOTA + IDF1) / 2`, không giảm, và nhận dạng lại không giảm;
+  - trên EPFL, số ID không tăng và số track mỗi frame không tụt mạnh.
+
+  Sau đó chấm lại bản gộp, vì các tham số ảnh hưởng lẫn nhau.
+- **Thay đổi đã áp dụng:**
+
+  | Tham số | Cũ | Mới |
+  |---|---|---|
+  | `detection.min_area` | 150 | 300 |
+  | `people_tracker.iou_gate` | 0,1 | 0,2 |
+  | `people_tracker.max_misses` | 10 | 3 |
+  | `people_tracker.new_track_min_height_ratio` | 0,6 | 0,7 |
+  | `tracklet_linking.min_color_similarity` | 0,5 | 0,3 |
+  | `tracklet_linking.max_cost` | 1,0 | 1,3 |
+- **Kết quả:**
+
+  | | Điểm tổng hợp | MOTA | IDF1 | Nhận dạng lại | EPFL số ID A / B | EPFL track ma A / B |
+  |---|---|---|---|---|---|---|
+  | Trước | 0,796 | 0,755 | 0,836 | 18/20 \| 18/20 | 54 / 48 | 12% / 13% |
+  | Sau | **0,825** | **0,779** | **0,870** | **20/20 \| 20/20** | **34 / 31** | **7% / 8%** |
+
+  "Track ma" là track không đứng trên khung tìm được nào (trôi ở chỗ không có ai). Tỉ lệ người nguyên vẹn được track bám giữ nguyên (89% / 92%), nên phần giảm số track là bớt track thừa, không phải bỏ sót thêm người.
+- **Đã thử nhưng không giữ** (điểm tổng hợp tăng nhưng nhận dạng lại giảm 20/20 → 18/20): `mog2_var_threshold` 30, `merge_max_frames` 60, `kalman.acceleration_std_px` 0,2.
+- **Để ngỏ** (tổng hợp không đổi, EPFL ít ID hơn, nhưng chưa kiểm chứng được là đúng hay chỉ là gộp nhầm): `mog2_learning_rate` 0,0005, `confirm_hits` 4, `tracklet_linking.max_cost` 1,6.
+- **Rủi ro:** chỉnh trên 5 cảnh tổng hợp và một video thật; với video khác (ánh sáng, góc quay khác) có thể phải chỉnh lại.

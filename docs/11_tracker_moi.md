@@ -38,7 +38,7 @@ Nối các box của từng tấm ảnh thành **đường đi của từng ngư
 
 4. **Ngưỡng có độ trễ khi ở trong cụm gộp.** Muốn **vào** cụm thì ≥ 60% box phải nằm trong cụm. Người **đã đang** trong cụm chỉ cần ≥ 30%. Trước đây người ở mép cụm cứ chập chờn "ra – vào", bị tính là mất dấu rồi bị xóa, và đó chính là mở đầu của các lần tráo tên.
 5. **Chặn ghép lại khác màu.** Lúc vừa tách nhóm, track chỉ được nhận box có màu áo/quần đủ giống (≥ 0,5). Áo vàng không được nhận box áo đỏ.
-6. **Chỉ tạo track mới từ khung đủ cao một người** (QĐ-27, rút ra trên video thật EPFL). Khung phải cao ít nhất 60% chiều cao người mong đợi ở vị trí chân đó (mô hình chiều cao, [10](10_tim_nguoi.md)), trừ khi khung chạm mép ảnh. Không có quy tắc này, mỗi mảnh đầu hoặc chân của người mặc áo đen lại sinh một track trùng, sống khoảng 1,4 giây rồi chết. Số ID trên EPFL giảm 199 → 85 (cam A) và 191 → 66 (cam B); điểm trên video tổng hợp không đổi.
+6. **Chỉ tạo track mới từ khung đủ cao một người** (QĐ-27, rút ra trên video thật EPFL). Khung phải cao ít nhất 70% chiều cao người mong đợi (ban đầu 60%, nâng lên 70% khi hiệu chỉnh tham số, QĐ-29) ở vị trí chân đó (mô hình chiều cao, [10](10_tim_nguoi.md)), trừ khi khung chạm mép ảnh. Không có quy tắc này, mỗi mảnh đầu hoặc chân của người mặc áo đen lại sinh một track trùng, sống khoảng 1,4 giây rồi chết. Số ID trên EPFL giảm 199 → 85 (cam A) và 191 → 66 (cam B); điểm trên video tổng hợp không đổi.
 
 ### Thí nghiệm sửa lỗi tráo tên (10 lượt chạy: 5 cảnh hành lang × 2 camera)
 

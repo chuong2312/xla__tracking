@@ -69,7 +69,7 @@ detection:
     quantile: 90        # phân vị chiều cao trong mỗi khoảng, % (mảnh người thấp, người nguyên vẹn cao)
     min_count: 20       # khoảng có ít box hơn thì bỏ
   # Lọc box: diện tích (pixel) và tỉ lệ cao/rộng của người.
-  min_area: 150
+  min_area: 300
   max_area: 40000
   min_ratio: 1.0
   max_ratio: 6.0
@@ -89,7 +89,7 @@ people_tracker:
   # Chọn lại điểm mỗi bấy nhiêu frame (hoặc khi còn ít hơn min_points).
   refresh_every: 5
   # IoU tối thiểu để được ghép track với detection.
-  iou_gate: 0.1
+  iou_gate: 0.2
   # Ghép bình thường: chi phí = (1 − IoU) + appearance_weight × (1 − độ giống màu). 0 = chỉ dùng IoU.
   appearance_weight: 0.0
   # Cập nhật màu và ảnh mẫu của track: mới = (1 − r)·cũ + r·hiện tại. 1.0 = thay hẳn mỗi frame.
@@ -98,7 +98,7 @@ people_tracker:
   confirm_hits: 3
   min_confirm_displacement_px: 5
   # Mất detection liên tiếp quá bấy nhiêu frame thì track kết thúc (không tính lúc merged hay static).
-  max_misses: 10
+  max_misses: 3
   # Làm mượt kích thước box: kích thước mới = (1 − a)·cũ + a·detection.
   size_smoothing: 0.3
   # Detection có diện tích to hơn track quá bấy nhiêu lần (hoặc nhỏ hơn 1/bấy nhiêu nếu guard_shrink) thì coi là khả nghi:
@@ -141,7 +141,7 @@ people_tracker:
   new_track_max_iou: 0.3
   # Chỉ tạo track mới từ detection cao ít nhất tỉ lệ này × chiều cao người mong đợi ở vị trí chân đó
   # (mô hình chiều cao, QĐ-27). Mảnh đầu/chân thì thấp hơn nhiều. 0 = tắt. Đơn vị: tỉ lệ 0–1.
-  new_track_min_height_ratio: 0.6
+  new_track_min_height_ratio: 0.7
   # Detection cách mép ảnh không quá chừng này (pixel) thì không xét chiều cao: người đang bước vào bị cắt.
   new_track_border_px: 5
 tracker:
@@ -186,11 +186,11 @@ tracklet_linking:
   # Chỗ bắt đầu đoạn sau lệch khỏi chỗ đoán không quá bấy nhiêu lần đường chéo box.
   max_dist_ratio: 3.0
   # Độ giống màu áo/quần tối thiểu (0–1) để được nối.
-  min_color_similarity: 0.5
+  min_color_similarity: 0.3
   # Chi phí = weight_motion × khoảng cách chuẩn hóa + weight_color × (1 − độ giống màu); chi phí tối đa để nối.
   weight_motion: 0.5
   weight_color: 0.5
-  max_cost: 1.0
+  max_cost: 1.3
 kalman:
   # Độ lệch chuẩn của gia tốc ngẫu nhiên (pixel/frame²). Người hay đổi tốc độ, đổi hướng thì tăng lên.
   # 0.1 chọn bằng quét lưới trên video tổng hợp v2 (docs/04_kalman.md); phải hiệu chỉnh lại trên dev thật.

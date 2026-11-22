@@ -79,7 +79,7 @@ Trên video thật EPFL không có cảnh trống ở đầu và ánh sáng nh�
 ## Bám người (D)
 
 **Vì sao khung thấp không được tạo track mới?** (QĐ-27)
-Trên video thật, người mặc áo đen trước tường tối bị tách thành mảnh đầu và mảnh chân. Nếu mỗi mảnh sinh một track thì một người có nhiều tên. Đo trên EPFL: các track trùng đó chỉ sống khoảng 1,4 giây rồi chết. Vì vậy chỉ khung cao ít nhất 60% chiều cao người mong đợi mới được tạo track mới; khung chạm mép ảnh được miễn. Số ID giảm hơn một nửa mà điểm trên video tổng hợp không đổi. Ngưỡng 0,6 được chọn bằng hiệu chỉnh tham số (thử 0 / 0,4 / 0,5 / 0,6 / 0,7).
+Trên video thật, người mặc áo đen trước tường tối bị tách thành mảnh đầu và mảnh chân. Nếu mỗi mảnh sinh một track thì một người có nhiều tên. Đo trên EPFL: các track trùng đó chỉ sống khoảng 1,4 giây rồi chết. Vì vậy chỉ khung cao ít nhất 60% chiều cao người mong đợi mới được tạo track mới; khung chạm mép ảnh được miễn. Số ID giảm hơn một nửa mà điểm trên video tổng hợp không đổi. Ngưỡng được chọn bằng hiệu chỉnh tham số: ban đầu 0,6 (thử 0 / 0,4 / 0,5 / 0,6 / 0,7), sau khi chỉnh các tham số khác thì nâng lên 0,7 (QĐ-29).
 
 
 **Vì sao dùng Lucas-Kanade mà không dùng Farneback?** (XLA 2.13, câu trả lời đã sửa)

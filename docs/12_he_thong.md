@@ -45,15 +45,19 @@ Bám người được chấm hai lần: trước và sau khi nối tracklet, đ
 
 ## Kết quả trên video tổng hợp hành lang
 
-### Mặc định hiện tại: MOG2 quên chậm + gộp mảnh theo chiều cao (QĐ-25, QĐ-26, QĐ-27, QĐ-28)
+### Mặc định hiện tại: sau hiệu chỉnh tham số (QĐ-25 … QĐ-29)
 
 | Cảnh | MOTA A / B (sau khi nối) | IDF1 A / B: trước → sau khi nối | Nhận dạng lại: ngoại hình / + sàn |
 |---|---|---|---|
-| `s1` (đi thưa) | 0,94 / 0,84 | 0,97 → 0,97 / 0,86 → 0,86 | 4/4 / 4/4 |
-| `s2` (cắt nhau) | 0,40 / 0,51 | 0,44 → 0,51 / 0,62 → 0,72 | **2/4 / 2/4** |
-| `s3` (đứng yên) | 0,93 / 0,82 | 0,97 → 0,97 / 0,86 → 0,86 | 4/4 / 4/4 |
-| `s4` (mặc giống) | 0,56 / 0,68 | 0,58 → 0,77 / 0,78 → 0,78 | 4/4 / 4/4 |
-| `s5` (đi thành nhóm) | 0,94 / 0,93 | 0,97 → 0,97 / 0,97 → 0,97 | 4/4 / 4/4 |
+| `s1` (đi thưa) | 0,96 / 0,86 | 0,98 → 0,98 / 0,86 → 0,86 | 4/4 / 4/4 |
+| `s2` (cắt nhau) | 0,42 / 0,51 | 0,54 → 0,68 / 0,54 → 0,73 | **4/4 / 4/4** |
+| `s3` (đứng yên) | 0,95 / 0,89 | 0,98 → 0,98 / 0,94 → 0,94 | 4/4 / 4/4 |
+| `s4` (mặc giống) | 0,59 / 0,70 | 0,59 → 0,79 / 0,79 → 0,79 | 4/4 / 4/4 |
+| `s5` (đi thành nhóm) | 0,96 / 0,95 | 0,98 → 0,98 / 0,98 → 0,98 | 4/4 / 4/4 |
+
+Trung bình 10 camera: MOTA 0,779, IDF1 0,870; nhận dạng lại 20/20 cả hai cách. Nối tracklet giúp rõ ở `s2` và `s4` (IDF1 tăng 0,14–0,20). MOTA ở `s2` vẫn thấp: hai người đi ngược chiều chồng lên nhau lâu trên trục nhìn của camera.
+
+### Trước khi hiệu chỉnh tham số: MOG2 quên chậm + gộp mảnh theo chiều cao (QĐ-25 … QĐ-28)
 
 Trung bình 10 camera: MOTA 0,755, IDF1 0,836. So với trừ nền trung vị (bảng dưới, MOTA 0,683, IDF1 0,820): tốt hơn ở `s1`, `s3`, `s4`, `s5`; nhận dạng lại `s4` chỉ dùng ngoại hình đạt 4/4. Điểm yếu còn lại là `s2`: hai người đi ngược chiều cắt nhau, nhận dạng lại 2/4.
 
@@ -92,7 +96,8 @@ Chưa có đáp án nên chưa chấm điểm được, chỉ đếm (cảnh có
 | MOG2, chưa gộp mảnh | 4,6 / 4,6 | 5,9 / 5,9 | 200 / 203 |
 | MOG2 + gộp mảnh theo chiều cao | 3,5 / 3,5 | 4,8 / 4,6 | 199 / 191 |
 | + chỉ tạo track từ khung đủ cao (QĐ-27) | 3,5 / 3,5 | 3,6 / 3,3 | 85 / 66 |
-| + MOG2 quên nền chậm (QĐ-28) | | 3,7 / 3,5 | **54 / 48** |
+| + MOG2 quên nền chậm (QĐ-28) | | 3,7 / 3,5 | 54 / 48 |
+| + hiệu chỉnh tham số (QĐ-29) | | 3,3 / 3,1 | **34 / 31** |
 
 Số ID vẫn còn nhiều hơn nhiều so với 4 người, nhưng đã giảm hơn một nửa. Ảnh debug cho thấy hai lỗi còn lại:
 - **Bỏ sót người:** cảnh có tới 4 người, nhưng mỗi frame chỉ có khoảng 2,6 khung đủ cao một người. Người đứng yên giờ đã được giữ (QĐ-28); người mặc đồ tối đi trước nền tối thì vẫn chỉ lộ cái đầu.

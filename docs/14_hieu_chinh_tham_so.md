@@ -46,7 +46,7 @@ Ký hiệu: ↑ = tăng giá trị, ↓ = giảm giá trị. ★ = nên thử tr
 |---|---|---|---|---|
 | ★ `mog2_learning_rate` | 0,001 | MOG2 "quên" nền cũ nhanh cỡ nào; cần khoảng 1/giá trị frame để theo kịp | Người đứng yên bị nuốt vào nền nhanh hơn; theo kịp ánh sáng đổi tốt hơn | Giữ người đứng yên lâu hơn; ánh sáng đổi thì báo nhầm lâu hơn, để lại "bóng ma" |
 | ★ `mog2_var_threshold` | 16 | Khác nền bao nhiêu mới tính là chuyển động | Ít báo nhầm, nhưng người mặc màu gần nền bị thủng nhiều hơn | Thấy người rõ hơn, nhưng báo nhầm nhiều hơn |
-| ★ `min_area` | 150 | Khung nhỏ hơn bấy nhiêu pixel thì bỏ | Bớt khung rác và mảnh vụn; người ở rất xa có thể bị bỏ | Giữ được người ở xa, nhưng thêm rác |
+| ★ `min_area` | 300 | Khung nhỏ hơn bấy nhiêu pixel thì bỏ | Bớt khung rác và mảnh vụn; người ở rất xa có thể bị bỏ | Giữ được người ở xa, nhưng thêm rác |
 | `max_area`, `min_ratio`, `max_ratio` | 40000; 1,0; 6,0 | Khung to quá, hoặc dẹt/cao bất thường thì bỏ | | |
 | `close_kernel` | [3, 9] | "Cây cọ" dựng đứng để nối thân với chân | Nối được chỗ đứt lớn hơn, nhưng dễ dính hai người | Ít dính người, nhưng người dễ vỡ mảnh |
 | `group_max_height_ratio` | 1,15 | Gộp hai mảnh khi khung gộp không cao quá bấy nhiêu lần một người | Gộp được nhiều mảnh hơn, nhưng dễ gộp nhầm hai người đứng trước – sau | Gộp ít hơn, nhiều mảnh rời hơn |
@@ -57,13 +57,13 @@ Ký hiệu: ↑ = tăng giá trị, ↓ = giảm giá trị. ★ = nên thử tr
 
 | Tham số | Hiện tại | Nghĩa | ↑ thì | ↓ thì |
 |---|---|---|---|---|
-| ★ `iou_gate` | 0,1 | Khung mới phải chồng lên khung cũ ít nhất bấy nhiêu mới được ghép | Ít ghép nhầm sang người khác; người đi nhanh dễ bị mất | Ghép được người đi nhanh, nhưng dễ ghép nhầm |
-| ★ `max_misses` | 10 | Mất dấu quá bấy nhiêu frame thì bỏ track | Giữ track lâu hơn khi bị che; nhiều track "ma" trôi lâu hơn | Bỏ track ma sớm; người bị che lâu thì đổi tên |
+| ★ `iou_gate` | 0,2 | Khung mới phải chồng lên khung cũ ít nhất bấy nhiêu mới được ghép | Ít ghép nhầm sang người khác; người đi nhanh dễ bị mất | Ghép được người đi nhanh, nhưng dễ ghép nhầm |
+| ★ `max_misses` | 3 | Mất dấu quá bấy nhiêu frame thì bỏ track | Giữ track lâu hơn khi bị che; nhiều track "ma" trôi lâu hơn | Bỏ track ma sớm; người bị che lâu thì đổi tên |
 | ★ `merge_max_frames` | 90 | Hai người dính nhau tối đa bấy nhiêu frame thì bỏ track đứng sau | Giữ tên qua lần dính lâu (IDF1); nhưng box sai lâu hơn (MOTA) | MOTA tăng nhưng IDF1 giảm |
 | `confirm_hits` | 3 | Phải thấy liên tiếp bấy nhiêu frame mới tính là người thật | Ít track rác, nhưng nhận người chậm hơn | Nhận nhanh, thêm rác |
 | `merge_coverage`, `merge_keep_coverage` | 0,6; 0,3 | Ngưỡng vào / ở lại trạng thái "đang dính" (độ trễ, QĐ-24) | | |
 | `recover_min_color_similarity` | 0,5 | Lúc tách nhóm, màu áo phải giống ít nhất bấy nhiêu mới nhận lại tên | Ít tráo tên khác màu; ánh sáng đổi thì mất tên | |
-| `new_track_min_height_ratio` | 0,6 | Khung phải cao ít nhất bấy nhiêu lần một người mới được đặt tên mới (QĐ-27) | Ít track mảnh, nhưng người bị che một phần chậm có tên | 0 = tắt |
+| `new_track_min_height_ratio` | 0,7 | Khung phải cao ít nhất bấy nhiêu lần một người mới được đặt tên mới (QĐ-27) | Ít track mảnh, nhưng người bị che một phần chậm có tên | 0 = tắt |
 | `new_track_max_iou` | 0,3 | Khung thừa chồng lên track đang có từ mức này thì không tạo tên mới | | |
 | `static_max_frames` | 300 | Đứng yên tối đa bấy nhiêu frame thì bỏ track | | |
 | `kalman.acceleration_std_px` | 0,1 | Người đổi tốc độ, đổi hướng nhiều cỡ nào | Kalman bám nhanh theo khung mới; đoán khi bị che kém hơn | Đoán mượt khi bị che; chậm theo khi người đổi hướng |
@@ -72,9 +72,10 @@ Ký hiệu: ↑ = tăng giá trị, ↓ = giảm giá trị. ★ = nên thử tr
 
 | Tham số | Hiện tại | Nghĩa | ↑ thì | ↓ thì |
 |---|---|---|---|---|
-| ★ `min_color_similarity` | 0,5 | Hai đoạn phải giống màu ít nhất bấy nhiêu mới nối | Ít nối nhầm, nhưng nối được ít | Nối được nhiều, có thể nối nhầm |
+| ★ `min_color_similarity` | 0,3 | Hai đoạn phải giống màu ít nhất bấy nhiêu mới nối | Ít nối nhầm, nhưng nối được ít | Nối được nhiều, có thể nối nhầm |
 | `max_gap_frames` | 120 | Khoảng hở thời gian tối đa giữa hai đoạn | | |
 | `max_dist_ratio` | 3,0 | Chỗ bắt đầu đoạn sau lệch khỏi chỗ đoán tối đa (× đường chéo khung) | | |
+| `max_cost` | 1,3 | Chi phí tối đa để được nối (vị trí + màu) | Nối nhiều hơn, ít ID hơn; có thể nối nhầm | Nối ít hơn |
 
 ### Bước F, G: ngoại hình và ghép hai camera (`features`, `reid`)
 
@@ -92,9 +93,11 @@ Các công tắc sau chỉ để làm thí nghiệm so sánh; bật lên thì k�
 - `appearance_weight` (0), `appearance_update_rate` (1,0), `template_search` (false);
 - `fragment_max_vertical_overlap` (−1), `guard_shrink` (true).
 
+> **Giá trị trong bảng trên là giá trị đang dùng sau hai vòng hiệu chỉnh (QĐ-29).** Mục 4–6 ghi lại quá trình.
+
 ## 4. Kết quả vòng dò 1 (2026-11-22)
 
-Config gốc lúc đó như `config.yaml` hiện tại. Mỗi dòng chỉ đổi một tham số. Kết quả đầy đủ ở `outputs/hieu_chinh/01_vong1/bang_diem.csv`.
+Config gốc lúc đó: `min_area` 150, `iou_gate` 0,1, `max_misses` 10, `new_track_min_height_ratio` 0,6, `tracklet_linking.min_color_similarity` 0,5, `max_cost` 1,0. Mỗi dòng chỉ đổi một tham số. Kết quả đầy đủ ở `outputs/hieu_chinh/01_vong1/bang_diem.csv`.
 
 | Lượt | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
 |---|---|---|---|---|---|---|
@@ -127,7 +130,7 @@ Config gốc lúc đó như `config.yaml` hiện tại. Mỗi dòng chỉ đổi
 - `merge_max_frames` là đánh đổi rõ: giảm thì MOTA tăng nhưng IDF1 giảm.
 - Nhóm nối tracklet (`max_gap_frames`, `max_dist_ratio`) và `reid.match_threshold` gần như không ảnh hưởng ở các giá trị đã thử.
 
-## 5. Bản gộp gợi ý (chưa áp dụng vào `config.yaml`)
+## 5. Bản gộp sau vòng 1 (đã áp dụng)
 
 File `outputs/hieu_chinh/02_goi_y_gop/config_goi_y.yaml` = config hiện tại + `iou_gate` 0,2, `max_misses` 5, `min_area` 300, `tracklet_linking.min_color_similarity` 0,3.
 
@@ -139,8 +142,55 @@ File `outputs/hieu_chinh/02_goi_y_gop/config_goi_y.yaml` = config hiện tại +
 
 Bản gộp 4 thay đổi tốt hơn `config.yaml` hiện tại ở mọi cột của video tổng hợp, và ít ID hơn trên EPFL. Track mỗi frame trên EPFL giảm nhẹ (3,70 → 3,44), nên xem video debug để chắc không bỏ sót thêm người.
 
-Muốn dùng thì chép 4 giá trị trên vào `config.yaml`, hoặc chạy thử trước:
+Bản này đã được chép vào `config.yaml` làm mốc cho vòng 2. Chạy lại riêng bản này:
 
 ```bash
 python run.py --scene data/real/epfl_4p_c0_c1 --debug-video --config outputs/hieu_chinh/02_goi_y_gop/config_goi_y.yaml --out outputs/he_thong/epfl_goi_y
 ```
+
+## 6. Vòng dò 2 (2026-11-22) và bản cuối
+
+Mốc: bản gộp ở mục 5 (điểm 0,820). Kết quả đầy đủ ở `outputs/hieu_chinh/03_vong2/bang_diem.csv`.
+
+| Lượt | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
+|---|---|---|---|---|---|---|
+| **mốc** | **0,820** | 0,772 | 0,867 | 20/20 \| 20/20 | 51 / 45 | 3,44 / 3,33 |
+| ★ `max_misses` = 3 | 0,825 | 0,779 | 0,870 | 20/20 \| 20/20 | 46 / 41 | 3,37 / 3,23 |
+| ★ `tracklet_linking.max_cost` = 1,3 | 0,820 | 0,772 | 0,867 | 20/20 \| 20/20 | **36 / 38** | 3,44 / 3,33 |
+| ★ `new_track_min_height_ratio` = 0,7 | 0,820 | 0,772 | 0,867 | 20/20 \| 20/20 | 41 / 40 | 3,38 / 3,24 |
+| `mog2_learning_rate` = 0,0005 | 0,820 | 0,772 | 0,868 | 20/20 \| 20/20 | 39 / 42 | 3,41 / 3,35 |
+| `confirm_hits` = 4 | 0,819 | 0,772 | 0,867 | 20/20 \| 20/20 | 44 / 39 | 3,43 / 3,20 |
+| `iou_gate` = 0,15 / 0,3 | 0,822 / 0,825 | | | 20/20 | 46 / 40 và 56 / 32 | |
+| `mog2_var_threshold` = 30 | 0,830 | 0,785 | 0,874 | **18/20** \| 20/20 | 45 / 35 | 3,24 / 3,12 |
+| `merge_max_frames` = 60 | 0,825 | 0,790 | 0,861 | **18/20 \| 18/20** | 52 / 43 | 3,38 / 3,31 |
+| `kalman.acceleration_std_px` = 0,2 | 0,826 | 0,779 | 0,872 | **18/20** \| 20/20 | 54 / 46 | 3,49 / 3,38 |
+| `mog2_var_threshold` = 20 | 0,824 | 0,777 | 0,871 | **18/20** \| 20/20 | 52 / 33 | 3,36 / 3,23 |
+| `max_misses` = 7 | 0,815 | | | 20/20 | 49 / 39 | |
+| `close_kernel` = [3, 7] / [3, 12] | 0,815 / 0,808 ↓ | | | 20/20 | | |
+| `merge_keep_coverage` = 0,4 | 0,809 ↓ | 0,776 | 0,842 | 16/20 | | |
+| `kalman.acceleration_std_px` = 0,05 | 0,804 ↓ | 0,770 | 0,839 | 16/20 | | |
+| `min_area` 200 / 450, `group_max_height_ratio` 1,1, `recover_min_color_similarity` 0,4 / 0,6, `max_size_change` 1,4 / 2,0, `tracklet_linking.min_color_similarity` 0,2 / 0,4, `new_track_min_height_ratio` 0,5 | 0,818–0,820 | | | 20/20 | gần như không đổi | |
+
+Gộp 3 thay đổi ★ (`max_misses` 3, `max_cost` 1,3, `new_track_min_height_ratio` 0,7) rồi chấm lại (`outputs/hieu_chinh/04_gop_vong2/`):
+
+| | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
+|---|---|---|---|---|---|---|
+| **Bản cuối (đang dùng)** | **0,825** | 0,779 | 0,870 | **20/20 \| 20/20** | **34 / 31** | 3,29 / 3,14 |
+| + `mog2_learning_rate` 0,0005 | 0,825 | 0,779 | 0,871 | 20/20 \| 20/20 | 34 / 25 | 3,30 / 3,11 |
+| + `confirm_hits` 4 | 0,824 | 0,778 | 0,870 | 20/20 \| 20/20 | 34 / 23 | 3,29 / 3,03 |
+| + `tracklet_linking.max_cost` 1,6 | 0,825 | 0,779 | 0,870 | 20/20 \| 20/20 | 30 / 29 | 3,29 / 3,14 |
+| + `mog2_var_threshold` 30 | 0,834 | 0,791 | 0,877 | 18/20 \| 20/20 | 48 / 24 | 3,08 / 2,91 |
+
+Ba dòng có dấu + đầu tiên không đổi điểm tổng hợp mà EPFL ít ID hơn. **Chưa áp dụng**, vì chưa có đáp án trên EPFL để biết số ID giảm là đúng hay là gộp nhầm người; có thể thử tiếp khi có đáp án. Dòng cuối làm nhận dạng lại giảm.
+
+**Kiểm tra bản cuối trên EPFL:** tỉ lệ người nguyên vẹn được track bám giữ nguyên (89% / 92%), track "ma" giảm 12% → 7% và 13% → 8%. Ảnh debug: phần lớn người có một khung nguyên người với tên ổn định. Lỗi còn lại: người áo đen trước nền tối chỉ có khung ở đầu, 2–3 người chồng nhau bị gộp một khung.
+
+**Điểm từng cảnh của bản cuối** (sau khi nối):
+
+| Cảnh | MOTA A / B | IDF1 A / B | Nhận dạng lại |
+|---|---|---|---|
+| `s1` | 0,96 / 0,86 | 0,98 / 0,86 | 4/4 \| 4/4 |
+| `s2` | 0,42 / 0,51 | 0,68 / 0,73 | 4/4 \| 4/4 |
+| `s3` | 0,95 / 0,89 | 0,98 / 0,94 | 4/4 \| 4/4 |
+| `s4` | 0,59 / 0,70 | 0,79 / 0,79 | 4/4 \| 4/4 |
+| `s5` | 0,96 / 0,95 | 0,98 / 0,98 | 4/4 \| 4/4 |
