@@ -32,7 +32,7 @@ def scene_dirs(tmp_path_factory):
 def test_same_seed_gives_same_ground_truth(scene_dirs):
     first, second = scene_dirs
     for name in ("cam_a/gt_tracking.csv", "cam_b/gt_tracking.csv", "gt_reid.csv"):
-        assert (first / name).read_text() == (second / name).read_text()
+        assert (first / name).read_text(encoding="utf-8") == (second / name).read_text(encoding="utf-8")
 
 
 def test_boxes_stay_inside_image_and_use_new_columns(scene_dirs):
@@ -47,7 +47,7 @@ def test_boxes_stay_inside_image_and_use_new_columns(scene_dirs):
 
 
 def test_scene_homography_maps_tape_marks_from_a_to_b(scene_dirs):
-    scene = json.loads((scene_dirs[0] / "scene.json").read_text())
+    scene = json.loads((scene_dirs[0] / "scene.json").read_text(encoding="utf-8"))
     marks_a = scene["cameras"]["cam_a"]["tape_marks"]
     marks_b = np.array(scene["cameras"]["cam_b"]["tape_marks"])
     assert np.allclose(project(np.array(scene["H_ab"]), marks_a), marks_b, atol=0.1)

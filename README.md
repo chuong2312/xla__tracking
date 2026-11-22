@@ -12,6 +12,33 @@ pip install -r requirements.txt
 
 Chạy lệnh từ thư mục `xla_tracking`.
 
+### Chạy trên Windows (không dùng WSL)
+
+Dùng PowerShell, đứng ở thư mục `xla_tracking`:
+
+```powershell
+# 1. Cài Python 3.12–3.14 từ python.org (nhớ tick "Add python.exe to PATH")
+py -3 -m venv .venv
+.venv\Scripts\Activate.ps1        # báo lỗi quyền thì chạy trước: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+                                  # dùng cmd thay PowerShell: .venv\Scripts\activate.bat
+pip install -r requirements.txt
+setx PYTHONUTF8 1                 # một lần duy nhất, rồi mở lại terminal: để in tiếng Việt ra file không bị lỗi mã hóa
+
+# 2. Dữ liệu (không có trên GitHub)
+python -m tools.make_synthetic_v2 --out data/synthetic_v2              # video tổng hợp s1–s5, khoảng 1 phút
+#    Video EPFL: chép cả thư mục data\real\epfl từ máy bạn cùng nhóm (4 video, calibration-4p.txt, nguon.txt),
+#    hoặc tải ở trang EPFL ghi trong nguon.txt.
+python -m tools.tao_canh --cam-a data/real/epfl/4p-c0.mp4 --cam-b data/real/epfl/4p-c1.mp4 --out data/real/epfl_4p_c0_c1
+python -m tools.epfl_homography --calib data/real/epfl/calibration-4p.txt --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1
+
+# 3. Kiểm tra và chạy
+python -m pytest
+python run.py --scene data/real/epfl_4p_c0_c1 --debug-video
+python -m tools.hieu_chinh
+```
+
+Trên Windows, đường dẫn trong lệnh viết bằng `/` hay `\` đều được. Điểm số có thể lệch rất ít so với máy Linux, vì bộ mã hóa video của hai hệ điều hành có thể ghi ra các frame hơi khác nhau.
+
 ## Cấu trúc thư mục
 
 ```

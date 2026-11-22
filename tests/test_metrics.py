@@ -71,7 +71,7 @@ def test_rank1_uses_best_candidate_and_method_filter(tmp_path):
     assert result["accuracy_str"]=="1/2"
 
 def test_empty_file_and_missing_required_column_raise(tmp_path):
-    empty=tmp_path/"empty.csv"; empty.write_text("")
+    empty=tmp_path/"empty.csv"; empty.write_text("", encoding="utf-8")
     with pytest.raises(ValueError,match="thiếu header"):
         detection_pr(empty,gt_csv(tmp_path/"gt.csv",[]),0.5)
     bad=make_csv(tmp_path/"bad.csv",["frame","x"],[(0,1)])
