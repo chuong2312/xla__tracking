@@ -139,5 +139,30 @@ def test_run_py_writes_summary(s1_scene, tmp_path):
                    check=True, cwd=ROOT, capture_output=True)
     summary = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert {"cam_a", "cam_b", "reid_ngoai_hinh", "reid_ngoai_hinh_san"} <= set(summary)
-    for name in ("events.csv", "door_links.csv", "global_ids_ngoai_hinh_san.csv"):
+    assert "sau_khi_noi" in summary["cam_a"]
+    for name in ("cam_a/tracks_linked.csv", "global_ids_ngoai_hinh.csv", "global_ids_ngoai_hinh_san.csv"):
         assert (out / name).exists()
+
+
+def test_track_already_merged_stays_in_blob_with_lower_coverage():
+    """Ngưỡng có độ trễ: track đang gộp chỉ cần 30% box nằm trong blob là vẫn tính trong blob."""
+    predicted = {1: (10, 10, 20, 60), 2: (36, 10, 20, 60)}
+    blob = [(8, 8, 36, 66)]
+    assert find_merged(blob, predicted, 0.6) == {}
+    assert find_merged(blob, predicted, 0.6, sticky_ids={2}, sticky_coverage=0.3) == {0: {1, 2}}
+
+
+def test_recovery_refuses_detection_with_different_clothes():
+    from src.kalman import ConstantVelocityKalman
+    from src.recovery import colors_of, make_template, recovery_cost
+    from src.track import Track
+    frame = _background()
+    frame[30:80, 40:60] = (40, 40, 200)
+    frame[30:80, 90:110] = (40, 200, 220)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    track = Track(1, ConstantVelocityKalman(75, 55, CONFIG["kalman"]), (20.0, 50.0), (75, 55))
+    track.colors = colors_of(frame, (40, 30, 20, 50), CONFIG["features"])
+    track.template = make_template(gray, (40, 30, 20, 50))
+    cfg = dict(CONFIG["people_tracker"], recover_max_dist_ratio=5.0)
+    assert np.isfinite(recovery_cost(track, (40, 30, 20, 50), gray, frame, cfg, CONFIG["features"]))
+    assert recovery_cost(track, (90, 30, 20, 50), gray, frame, cfg, CONFIG["features"]) == np.inf

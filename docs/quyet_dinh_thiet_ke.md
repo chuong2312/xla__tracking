@@ -107,7 +107,7 @@
 - **Lý do:** dành thời gian cho phần chính là Re-ID và đếm qua cửa.
 - **Hệ quả:** vẫn phải giải thích được thuật toán bên trong từng hàm. Hàm thư viện nào được dùng thì có mục giải thích trong tài liệu của module tương ứng.
 
-## QĐ-12: Đếm người IN/OUT là bắt buộc
+## QĐ-12: Đếm người IN/OUT là bắt buộc *(ĐÃ BỎ theo QĐ-21)*
 - **Trạng thái:** đã chốt. Thầy yêu cầu (2026-11-21).
 - **Quyết định:**
   - Phần E (`door.py`) nằm trong phạm vi bắt buộc.
@@ -146,7 +146,7 @@
   - `detection_pr` chỉ chấm frame mà mọi box đều gán tay và không box nào bị che nặng.
   - File đáp án cũ (không có hai cột này) vẫn đọc và chấm được như trước.
 
-## QĐ-16: Video tổng hợp v2 vẽ theo tọa độ sàn và homography
+## QĐ-16: Video tổng hợp v2 vẽ theo tọa độ sàn và homography *(bố trí đổi theo QĐ-22)*
 - **Trạng thái:** đã làm (2026-11-21).
 - **Bối cảnh:** chưa có video thật. Video tổng hợp cũ chỉ có đáp án cho một camera, các hộp màu trên nền phẳng, và chỉ 3 "người".
 - **Quyết định:**
@@ -157,7 +157,7 @@
 - **Lý do:** có đáp án chính xác cho cả hai camera, cho Re-ID (ai là ai) và cho sự kiện qua cửa, cùng với homography A → B biết trước để kiểm tra công cụ click điểm sàn.
 - **Hệ quả:** người là hình chữ nhật đi thẳng đều, nên kết quả trên video tổng hợp chỉ dùng để kiểm tra code. Tham số phải hiệu chỉnh lại trên video thật.
 
-## QĐ-17: Cảnh cửa dùng bố trí "hành lang + cửa"
+## QĐ-17: Cảnh cửa dùng bố trí "hành lang + cửa" *(ĐÃ BỎ theo QĐ-21)*
 - **Trạng thái:** đã chốt cho cảnh cửa (2026-11-21). Các kịch bản S1–S4 vẫn theo QĐ-02 (hai camera cùng nhìn một khu vực). Nếu sau này muốn dùng bố trí này cho cả đồ án thì chỉ cần sửa kế hoạch quay; code đã hỗ trợ cả hai.
 - **Bối cảnh:** nhóm đề xuất bố trí giống camera an ninh thật: camera A ở đầu hành lang thấy người đi tới rồi rẽ vào cửa; camera B gắn đối diện cửa, thấy người đi qua cửa.
 - **Quyết định:** quay cảnh cửa theo bố trí này ([ke_hoach_quay_video.md](ke_hoach_quay_video.md), mục 3b). Video tổng hợp có kịch bản `hanh_lang_cua` mô phỏng đúng bố trí này.
@@ -170,7 +170,7 @@
   - Camera A nhìn cửa rất nghiêng, nên đếm ở camera A kém tin cậy hơn camera B.
   - Đồng bộ giờ trở thành bắt buộc.
 
-## QĐ-18: Ghép người giữa hai camera bằng thời gian qua cửa
+## QĐ-18: Ghép người giữa hai camera bằng thời gian qua cửa *(ĐÃ BỎ theo QĐ-21)*
 - **Trạng thái:** đã làm (2026-11-21), `src/door_matching.py`.
 - **Bối cảnh:** XLA 2.11 gợi ý dùng thời gian làm ràng buộc khi các camera không cùng nhìn một khu vực. Với bố trí QĐ-17, thời điểm qua cửa là tín hiệu rất rõ.
 - **Quyết định:** hai lượt qua cửa **cùng chiều**, lệch nhau không quá `reid.door_event_max_gap_s` giây, được phép ghép. Ghép một-một bằng Hungarian để tổng độ lệch nhỏ nhất.
@@ -203,3 +203,118 @@
   2. Chỉ gộp các mảnh nằm trên dưới nhau.
   3. Khi hai người dính nhau, chỉ người đứng trước giữ Lucas-Kanade. Thí nghiệm so sánh: MOTA 0,758, IDF1 0,84, tốt nhất trong 3 cách thử.
 - **Hệ quả:** `src/metrics.py` giờ chấm cả các trạng thái `merged` và `static` (`SCORED_TRACK_STATES`), vì tracker mới vẫn báo vị trí người trong hai trạng thái đó.
+
+## QĐ-21: Bỏ phần đếm VÀO/RA qua cửa
+- **Trạng thái:** đã làm (nhóm quyết định, 2026-11-22).
+- **Bối cảnh:** nhóm muốn tập trung vào video hành lang có nhiều người đi lại.
+- **Quyết định:** bỏ hẳn:
+  - đếm VÀO/RA (`src/door.py`);
+  - ghép hai camera theo thời gian qua cửa (`src/door_matching.py`);
+  - các cảnh `door`, `hanh_lang_cua`;
+  - tài liệu 05, 07.
+  Các mục QĐ-12, QĐ-17, QĐ-18 hết hiệu lực.
+- **Rủi ro:** ngày 2026-11-21 thầy đã trả lời rằng đếm VÀO/RA là **bắt buộc** (câu 6 trong [cau_hoi_thay.md](cau_hoi_thay.md)). Bỏ phần này là trái yêu cầu đó. **Nhóm cần trao đổi lại với thầy.**
+- **Lấy lại khi cần:** toàn bộ code, test và tài liệu của phần cửa còn trong commit `827121c` trên nhánh `redesign`.
+
+## QĐ-22: Chỉ một bố trí: hành lang, hai camera ở cùng một đầu
+- **Trạng thái:** đã làm (nhóm chốt, 2026-11-22).
+- **Quyết định:**
+  - Hành lang rộng 3 m, dài 10 m.
+  - Hai camera ở cùng một đầu (góc trái, góc phải), cùng nhìn dọc vào trong.
+  - Mỗi cảnh có 4 người.
+  - Video tổng hợp có 5 kịch bản: `s1` đi thưa, `s2` cắt nhau, `s3` đứng yên, `s4` mặc giống, `s5` đi thành nhóm.
+  - Bố trí `san_chung` cũ cũng bỏ.
+- **Lý do:** hai camera cùng thấy mặt trước người, nên vẫn dùng được vị trí sàn (QĐ-02). Bố trí này cũng giống camera an ninh hành lang thật.
+- **Hệ quả:** trong hành lang nhìn dọc, nhiều người đi ngược chiều sẽ chồng lên nhau lâu, nên khó giữ đúng tên ([11](11_tracker_moi.md), [12](12_he_thong.md)).
+
+## QĐ-23: Nối các đoạn track bị đứt sau khi bám người
+- **Trạng thái:** đã làm (2026-11-22), `src/tracklet_linking.py`.
+- **Quyết định:**
+  - Nối đoạn sau với đoạn trước khi đoạn sau bắt đầu sau đoạn trước không quá 120 frame, ở gần chỗ đoán theo vận tốc (không quá 3 lần đường chéo box), và có màu áo giống.
+  - Ghép bằng Hungarian.
+  - Báo MOTA/IDF1 cả trước lẫn sau khi nối.
+- **Kết quả:** IDF1 trung bình tăng 0,783 → 0,796 ([13](13_noi_tracklet.md)). Giúp ít, vì lỗi chính là tráo tên chứ không phải track bị đứt.
+
+## QĐ-24: Sửa lỗi tráo tên khi nhiều người dính nhau lâu
+- **Trạng thái:** đã làm (2026-11-22).
+- **Nguyên nhân tìm được:** người ở mép cụm gộp chập chờn quanh ngưỡng 60% "trong cụm / ngoài cụm", bị tính là mất dấu rồi bị xóa. Khi người đó hiện ra, track của người khác (vẫn còn khuất) "cướp" box của họ.
+- **Quyết định:**
+  - **Ngưỡng có độ trễ:** vào cụm cần 60%, ở lại cụm chỉ cần 30% (`merge_keep_coverage`).
+  - **Chặn ghép lại khác màu:** độ giống màu < 0,5 thì cấm (`recover_min_color_similarity`).
+- **Đã thử nhưng không giữ** (bảng ở [11](11_tracker_moi.md)):
+  - thêm màu vào bước ghép bình thường;
+  - cập nhật màu và ảnh mẫu từ từ;
+  - đổi trọng số khi ghép lại;
+  - so khớp ảnh mẫu NCC trong cụm.
+
+  Các công tắc vẫn còn trong config để chạy lại thí nghiệm.
+- **Kết quả:** IDF1 trung bình 0,783 → 0,806. Trên toàn hệ thống: `s2` cam B 0,66 → 0,78, `s4` cam B 0,69 → 0,78, nhận dạng lại ở `s4` từ 1/4 lên 2/4 (chỉ ngoại hình) và 4/4 (có vị trí sàn).
+
+## QĐ-25: Dùng MOG2 làm mô hình nền mặc định
+- **Trạng thái:** đã làm (2026-11-22), `detection.background: mog2`.
+- **Bối cảnh:** lần đầu chạy trên video thật (EPFL "4p", camera c0/c1, 360×288, 25 fps). Không có cảnh trống ở đầu video, ánh sáng nhấp nháy.
+- **Đo được** (tỉ lệ pixel bị coi là foreground, c1, 1800 frame đầu; càng thấp càng ít báo nhầm):
+  - trừ nền trung vị: 15,5%; báo nhầm cả mảng tường và thảm;
+  - trừ nền trung vị kèm bù độ sáng (`exposure_compensation`): 14,8%, gần như không đỡ;
+  - MOG2: 5,0%.
+- **Quyết định:** chọn MOG2 làm mặc định. Trừ nền trung vị vẫn giữ để so sánh; `exposure_compensation` mặc định tắt.
+- **Đánh đổi:** trên video tổng hợp, MOG2 cho MOTA cao hơn nhưng nhận dạng lại ở `s2` kém hơn ([12](12_he_thong.md)). MOG2 cập nhật nền cả ảnh, nên người đứng yên lâu có thể bị "nuốt" dần vào nền.
+
+## QĐ-26: Gộp mảnh người dựa trên mô hình chiều cao theo vị trí chân
+- **Trạng thái:** đã làm (2026-11-22), `src/height_model.py`, `src/detection.py`.
+- **Vấn đề:** trên EPFL, người mặc áo đen đứng trước ghế hay tường tối bị mất cả phần thân trong mask. Bước tìm người trả về hai mảnh, đầu và chân, và tracker tạo hai track cho cùng một người. Khoảng một nửa số khung là mảnh người (chiều cao trung vị chỉ bằng nửa chiều cao người nguyên vẹn).
+- **Đã thử nhưng bỏ** (trung bình 5 cảnh tổng hợp, sau khi nối tracklet):
+  - gộp mọi mảnh xếp trên – dưới: IDF1 0,82 → 0,77; nhận dạng lại `s2` còn 1/4;
+  - bỏ track mảnh trong tracker (`fragment_max_vertical_overlap`, để lại trong config, mặc định tắt): IDF1 0,81 → 0,78.
+
+  Lý do chung: trong hành lang nhìn dọc, người ở xa nằm ngay trên đầu người ở gần, nên "trên – dưới" không phân biệt được "mảnh của một người" với "hai người đứng trước – sau".
+- **Quyết định:**
+  - Ước lượng chiều cao người mong đợi `h(y_chân) = a·y_chân + b` từ 1500 frame đầu của chính video. Lấy phân vị 90% của chiều cao box trong từng khoảng y_chân, rồi kẻ đường thẳng qua các điểm đó bằng **Theil–Sen** (độ dốc = trung vị độ dốc của mọi cặp điểm). Lần đầu dùng bình phương tối thiểu thì khoảng sát mép dưới ảnh (người bị cắt chân) kéo cả đường xuống thấp; trung vị không bị kéo như vậy.
+  - Chỉ gộp hai mảnh thẳng hàng khi box gộp cao không quá `1,15 × h(y_chân)`.
+- **Không phải học máy:** chỉ là thống kê (phân vị, trung vị) và kẻ đường thẳng qua khoảng 10 điểm; không có nhãn, không có mô hình phân loại.
+- **Kết quả:**
+  - Tổng hợp (MOG2, trung bình 5 cảnh): MOTA 0,718 → 0,723, IDF1 0,814 → 0,822.
+  - EPFL (không có đáp án, chỉ đếm): số track đang chạy mỗi frame giảm 5,9 → 4,8 (c0) và 5,9 → 4,6 (c1), trong cảnh có tối đa 4 người. Vẫn còn thừa track và đổi ID nhiều.
+- **Ca còn sai:** hai người cùng mặc áo đen đứng chồng trước – sau. Box gộp "đầu người sau + chân người trước" chỉ cao hơn một người vài pixel nên vẫn bị gộp (`outputs/explain/chieu_cao/2_gop_manh.png`).
+
+## QĐ-27: Chỉ tạo track mới từ khung đủ cao một người
+- **Trạng thái:** đã làm (2026-11-22), `src/height_model.py` (`tall_enough`), `src/people_tracker.py` (`_create_tracks`).
+- **Bối cảnh:** sau QĐ-26, EPFL vẫn có khoảng 4,7 track mỗi frame (cảnh tối đa 4 người) và gần 200 ID mỗi camera. Phân tích các track:
+  - khoảng 250 track mỗi camera chết khi còn `confirmed`, tuổi trung vị chỉ 36 frame (1,4 giây);
+  - bỏ các track rời khỏi mép ảnh, còn khoảng 200 track; 11 frame trước khi chết, những track này đã không còn điểm LK, và ở frame cuối 85% box gần như trống.
+
+  Đây là **track trùng** sinh ra từ một mảnh người (đầu hoặc chân). Khi người đó lại được tìm thấy nguyên vẹn, track chính nhận khung, còn track mảnh trôi vào chỗ trống rồi chết.
+- **Quyết định:** detection chỉ được tạo track mới khi `h ≥ 0,6 · h_mong_đợi(y_chân)` (`new_track_min_height_ratio`), trừ khi box chạm mép ảnh (`new_track_border_px` = 5), vì người đang bước vào khung hình thì bị cắt. Khung mảnh vẫn được ghép với track đã có như cũ.
+- **Hiệu chỉnh tham số** (tổng hợp: trung bình 10 camera sau khi nối; EPFL: track mỗi frame và số ID sau khi nối, A / B):
+
+  | Ngưỡng | MOTA | IDF1 | EPFL track/frame | EPFL số ID |
+  |---|---|---|---|---|
+  | 0 (tắt) | 0,723 | 0,822 | 4,81 / 4,63 | 199 / 191 |
+  | 0,4 | 0,723 | 0,822 | 3,92 / 3,78 | 112 / 98 |
+  | 0,5 | 0,723 | 0,822 | 3,77 / 3,51 | 95 / 81 |
+  | **0,6** | **0,723** | **0,822** | **3,61 / 3,26** | **85 / 66** |
+  | 0,7 | 0,716 | 0,818 | 3,46 / 3,14 | 74 / 60 |
+
+  Chọn 0,6: mức cao nhất mà điểm tổng hợp chưa giảm. Nhận dạng lại trên tổng hợp không đổi ở mọi mức.
+- **Kiểm tra không bỏ sót:** tỉ lệ khung đủ cao một người mà không có track nào phủ (IoU > 0,3) **giảm** 23% → 16% (A) và 19% → 11% (B). Luật mới không làm mất người được tìm thấy nguyên vẹn; nó còn giúp, vì track mảnh không còn chiếm chỗ.
+- **Còn lại:** mỗi frame EPFL chỉ có khoảng 2,3 khung đủ cao, trong khi có tới 4 người. Người mặc đồ tối trước nền tối, và người đứng yên bị MOG2 dần coi là nền, không được tìm thấy. Đó là giới hạn của bước tìm người, không phải của tracker.
+
+## QĐ-28: MOG2 quên nền chậm hơn (learning rate 0,005 → 0,001)
+- **Trạng thái:** đã làm (2026-11-22), `detection.mog2_learning_rate: 0.001`.
+- **Vấn đề:** MOG2 cập nhật nền ở **mọi** pixel, kể cả chỗ có người (không cập nhật chọn lọc được). Với 0,005, nền theo kịp sau khoảng 200 frame (8 giây ở 25 fps), nên người đứng yên vài giây bị "nuốt" vào nền rồi biến mất. Trên EPFL, ảnh debug có nhiều người đứng yên không có khung.
+- **Hiệu chỉnh tham số** (tổng hợp: trung bình 10 camera sau khi nối; EPFL: số ID sau khi nối A / B):
+
+  | learning rate | MOTA | IDF1 | Nhận dạng lại s4 (ngoại hình) | EPFL số ID |
+  |---|---|---|---|---|
+  | 0,005 | 0,723 | 0,822 | 2/4 | 85 / 66 |
+  | 0,002 | 0,747 | 0,837 | 4/4 | 62 / 48 |
+  | **0,001** | **0,755** | **0,836** | **4/4** | **54 / 48** |
+  | 0,0005 | 0,760 | 0,846 | 4/4 | 41 / 55 |
+
+  Chỉ đo bước tìm người trên EPFL, số khung đủ cao một người mỗi frame tăng 2,47 → 2,64 (A) và 2,25 → 2,57 (B).
+- **Vì sao chọn 0,001 mà không chọn 0,0005:**
+  - Video tổng hợp không có ánh sáng đổi, nên luôn có lợi cho việc quên thật chậm.
+  - 0,0005 cần khoảng 80 giây mới theo kịp khi đèn đổi hoặc khi người đứng lâu rời đi (để lại "bóng ma"); 0,001 cần khoảng 40 giây.
+  - Trên EPFL hai mức ngang nhau (A tốt hơn ở 0,0005, B tốt hơn ở 0,001).
+- **Đã thử và bỏ:** trừ nền trung vị có cập nhật chọn lọc trên EPFL: 14–20% ảnh bị coi là foreground (báo nhầm nhiều).
+- **Rủi ro:** khi ánh sáng thay đổi nhanh (bật đèn, mây che nắng qua cửa sổ), nền theo không kịp và báo nhầm cả mảng lớn trong vài chục giây.

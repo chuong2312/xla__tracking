@@ -11,7 +11,7 @@ from tools.calibrate_floor import render_check
 from tools.synthetic_scenarios import LAYOUTS
 from tools.synthetic_scene import floor_to_image
 
-LAYOUT = LAYOUTS["san_chung"]
+LAYOUT = LAYOUTS["hanh_lang"]
 
 
 def _tape_points():
@@ -23,7 +23,7 @@ def test_estimate_recovers_true_floor_homography():
     points_a, points_b = _tape_points()
     H, errors = homography.estimate(points_a, points_b, ransac_threshold_px=3.0)
     assert errors.max() < 1e-3
-    floor_point = [(2.5, 1.7)]
+    floor_point = [(2.0, 6.0)]
     truth = homography.project(floor_to_image(LAYOUT, "cam_b"), floor_point)
     via_a = homography.project(H, homography.project(floor_to_image(LAYOUT, "cam_a"), floor_point))
     assert np.allclose(via_a, truth, atol=0.5)

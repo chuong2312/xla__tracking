@@ -31,12 +31,12 @@ Mỗi camera tự đặt số cho từng người. Bước này trả lời: **n
 
 ## Kết quả trên video tổng hợp (chế độ oracle: dùng khung đáp án)
 
-| Kịch bản | Chỉ ngoại hình | Ngoại hình + sàn |
+| Kịch bản (hành lang, QĐ-22) | Chỉ ngoại hình | Ngoại hình + sàn |
 |---|---|---|
-| `s1`, `s2`, `s3`, `door`, `hanh_lang_cua` | 4/4 | 4/4 |
-| `s4` (người 1 và 2 mặc giống hệt) | **2/4**: người 1 và 2 bị tráo | **4/4** |
+| `s1`–`s5` | 4/4 | 4/4 |
+| riêng `s4` (người 1 và 2 mặc giống hệt): rank-1 | 3/4 | 4/4 |
 
-Ở `s4`, điểm keypoint và điểm màu của người 1 và người 2 gần như hòa nhau. Chỉ vị trí sàn phân biệt được (1,00 so với 0,04). Đây là lý do phải báo cáo riêng hai kết quả: để thấy rõ phần nào làm được việc gì.
+Ở `s4`, điểm keypoint và điểm màu của người 1 và người 2 gần như hòa nhau, nên rank-1 chỉ ngoại hình còn 3/4. Vị trí sàn tách được hai người. Ở bố trí sàn cũ (trước QĐ-22), "chỉ ngoại hình" của `s4` còn tụt xuống 2/4. Đây là lý do phải báo cáo riêng hai kết quả: để thấy rõ phần nào làm được việc gì.
 
 **Đừng báo cáo con số 4/4 này như kết quả thật.** Video tổng hợp quá dễ: hai camera vẽ cùng một hoa văn, không có góc nghiêng thật, không đổi ánh sáng.
 
@@ -67,7 +67,7 @@ Hiện mới có **chế độ oracle**, tức dùng khung đáp án. Chế đ�
 
 ## Khi nào hỏng
 
-- **Hai người mặc giống nhau:** cần vị trí sàn, hoặc thời gian qua cửa ([07](07_ghep_su_kien_cua.md)).
+- **Hai người mặc giống nhau:** cần vị trí sàn.
 - **Hai camera lệch góc lớn:** thấy hai mặt khác nhau, keypoint khớp kém. Thử ASIFT.
 - **Ánh sáng hai camera rất khác:** màu lệch dù đã cân bằng gray-world.
 - **Tracker cắt một người thành nhiều track:** cần nối các đoạn track trước khi ghép (XLA 2.10, làm ở giai đoạn sau).

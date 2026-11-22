@@ -36,7 +36,25 @@ Nối các box của từng tấm ảnh thành **đường đi của từng ngư
 2. **Chỉ gộp mảnh khi chúng nằm trên dưới nhau.** Hai mảnh nằm ngang hàng thường là **hai người đi cạnh nhau**, không phải thân và chân của một người.
 3. **Khi dính nhau, chỉ người đứng trước giữ Lucas-Kanade.** Người đứng trước là người có chân thấp nhất trong ảnh, tức gần camera nhất, nên vẫn được nhìn thấy đầy đủ. Người đứng sau bỏ hết điểm và đi theo vận tốc cũ, vì điểm của họ dễ trượt sang người đứng trước (XLA 2.4, 2.5).
 
-### Thí nghiệm so sánh cho quy tắc 3 (trung bình 12 lượt chạy: 6 cảnh × 2 camera)
+4. **Ngưỡng có độ trễ khi ở trong cụm gộp.** Muốn **vào** cụm thì ≥ 60% box phải nằm trong cụm. Người **đã đang** trong cụm chỉ cần ≥ 30%. Trước đây người ở mép cụm cứ chập chờn "ra – vào", bị tính là mất dấu rồi bị xóa, và đó chính là mở đầu của các lần tráo tên.
+5. **Chặn ghép lại khác màu.** Lúc vừa tách nhóm, track chỉ được nhận box có màu áo/quần đủ giống (≥ 0,5). Áo vàng không được nhận box áo đỏ.
+6. **Chỉ tạo track mới từ khung đủ cao một người** (QĐ-27, rút ra trên video thật EPFL). Khung phải cao ít nhất 60% chiều cao người mong đợi ở vị trí chân đó (mô hình chiều cao, [10](10_tim_nguoi.md)), trừ khi khung chạm mép ảnh. Không có quy tắc này, mỗi mảnh đầu hoặc chân của người mặc áo đen lại sinh một track trùng, sống khoảng 1,4 giây rồi chết. Số ID trên EPFL giảm 199 → 85 (cam A) và 191 → 66 (cam B); điểm trên video tổng hợp không đổi.
+
+### Thí nghiệm sửa lỗi tráo tên (10 lượt chạy: 5 cảnh hành lang × 2 camera)
+
+| Thử | MOTA TB | IDF1 TB | Đổi tên nhầm | Giữ? |
+|---|---|---|---|---|
+| Trước khi sửa | 0,672 | 0,783 | 13 | |
+| Thêm màu vào bước ghép bình thường (`appearance_weight` 0,5) | 0,665 | 0,779 | 14 | Không |
+| Cập nhật màu và ảnh mẫu từ từ (`appearance_update_rate` 0,1) | 0,672 | 0,783 | 13 | Không (không đổi) |
+| Ghép lại sau tách: ít vị trí, nhiều màu | 0,683 | 0,780 | 15 | Không |
+| **Ngưỡng có độ trễ (`merge_keep_coverage` 0,3)** | **0,692** | **0,806** | 14 | **Có** |
+| Chặn ghép lại khác màu (`recover_min_color_similarity` 0,5) | 0,670 | 0,782 | 13 | Có (an toàn, không hại) |
+| Tìm lại người trong cụm bằng so khớp ảnh mẫu NCC (`template_search`), ngưỡng 0,4 / 0,6 / 0,75 | 0,662 / 0,619 / 0,668 | 0,781 / 0,763 / 0,794 | 14 / 15 / 11 | Không (tắt) |
+
+Cách tìm ra nguyên nhân: soi từng frame lúc tách nhóm ở `s2`. Track của người 1 ở sát mép cụm, phần box trong cụm dao động 0,46–0,62 quanh ngưỡng 0,6, nên bị tính là mất dấu và bị xóa ở frame 205. Khi người 1 hiện ra, track của người 3 (vẫn còn khuất) "cướp" box của người 1. So khớp ảnh mẫu không giúp được, có lẽ vì ảnh mẫu chụp ở xa quá nhỏ (24×48), và người đứng sau bị che nên dễ khớp nhầm sang người đứng trước.
+
+### Thí nghiệm so sánh cho quy tắc 3 (trung bình 12 lượt chạy trên bộ cảnh cũ, trước QĐ-22)
 
 | Khi dính nhau thì xử lý Lucas-Kanade thế nào | MOTA | IDF1 |
 |---|---|---|
@@ -44,25 +62,34 @@ Nối các box của từng tấm ảnh thành **đường đi của từng ngư
 | Người sau giữ các điểm ngoài vùng bị che | 0,714 | 0,80 |
 | **Chỉ người trước dùng (chọn)** | **0,758** | **0,84** |
 
-## Kết quả trên video tổng hợp (tìm người + tracker mới)
+### Hai thử nghiệm KHÔNG cải thiện (bộ cảnh cũ, giữ để báo cáo)
 
-| Cảnh | MOTA cam A / cam B | IDF1 cam A / cam B | Số lần đổi tên nhầm |
+| Thử | MOTA | IDF1 | Ghi chú |
 |---|---|---|---|
-| `s1` | 0,94 / 0,94 | 0,97 / 0,97 | 0 |
-| `s2` | 0,92 / 0,78 | 0,96 / 0,89 | 0 |
-| `s3` (đứng yên) | 0,72 / 0,95 | 0,81 / 0,98 | 1 |
-| `s4` (mặc giống) | 0,93 / 0,78 | 0,97 / 0,89 | 0 |
-| `door` | 0,31 / 0,76 | 0,64 / 0,76 | 2 |
-| `hanh_lang_cua` | 0,56 / 0,52 | 0,67 / 0,56 | 6 |
+| Kéo dài thời gian ghép lại bằng màu/ảnh mẫu sau khi tách nhóm: 1 → 5 → 15 frame (`recover_window_frames`) | 0,755 → 0,753 → 0,760 | 0,823 → 0,822 → 0,813 | Đổi tên nhầm tăng 8 → 10 → 14; giữ 1 |
+| Chỉ chặn box to ra, không chặn box nhỏ đi (`guard_shrink`) | không đổi | không đổi | Giữ `true` |
+
+## Kết quả trên video tổng hợp hành lang (tìm người + tracker mới, chưa nối tracklet)
+
+| Cảnh | MOTA cam A / cam B | IDF1 cam A / cam B | Số lần đổi tên nhầm A / B |
+|---|---|---|---|
+| `s1` (đi thưa) | 0,86 / 0,84 | 0,93 / 0,85 | 0 / 1 |
+| `s2` (cắt nhau) | 0,44 / 0,58 | 0,64 / 0,65 | 3 / 4 |
+| `s3` (đứng yên) | 0,94 / 0,75 | 0,97 / 0,88 | 0 / 0 |
+| `s4` (mặc giống) | 0,32 / 0,69 | 0,57 / 0,78 | 3 / 3 |
+| `s5` (đi thành nhóm) | 0,69 / 0,83 | 0,85 / 0,92 | 0 / 0 |
+
+Kết quả sau khi nối tracklet nằm ở [12](12_he_thong.md) và [13](13_noi_tracklet.md).
 
 ## Khi nào hỏng (hạn chế cần ghi trong báo cáo)
 
 - **Nhóm đi sát nhau ngay từ lúc xuất hiện:** chỉ có một track chung cho cả nhóm, đến khi họ tách ra.
-- **Hai người đi cùng một cột ảnh**, một người lại gần, một người đi xa (cảnh `door`, camera A): dính nhau lâu, Kalman đoán lệch dần.
-- **Nhiều người chen nhau ở cửa** (cảnh `hanh_lang_cua`, camera B): bị tráo tên.
-- **Khi người bị che, đáp án chỉ bao phần nhìn thấy, còn box của tracker bao cả người.** Vì vậy IoU có thể dưới 0,5 và bị chấm là sai, dù tracker vẫn bám đúng người. MOTA thấp ở `door cam_a` một phần do điều này.
+- **Nhiều người đi ngược chiều trên cùng trục nhìn của camera** (hành lang nhìn dọc, `s2`, `s4`): chồng lên nhau tới vài giây, Kalman đoán lệch dần, và dễ tráo tên khi tách ra.
+- **Khi người bị che, đáp án chỉ bao phần nhìn thấy, còn box của tracker bao cả người.** Vì vậy IoU có thể dưới 0,5 và bị chấm là sai, dù tracker vẫn bám đúng người.
 
 ## Thầy có thể hỏi
+
+- *"Vì sao khung thấp không được tạo track mới?"* Vì khung thấp hơn nhiều so với một người đứng ở chỗ đó thường chỉ là mảnh (đầu hoặc chân) của người đã có track. Tạo track cho nó thì một người có hai tên. Khung đó vẫn được dùng để cập nhật track cũ; chỉ không sinh tên mới. Người đang bước vào ở mép ảnh thì được miễn.
 
 - *"Hai người đi qua nhau thì sao?"* Tracker phát hiện cụm gộp trước khi ghép. Trong lúc dính nhau, người đứng trước vẫn bám bằng Lucas-Kanade, người đứng sau đi theo Kalman. Khi tách ra thì ghép lại bằng vị trí, ảnh mẫu và màu.
 - *"Người đứng yên thì sao?"* Nền không cập nhật ở chỗ có người, nên người đó vẫn được phát hiện. Nếu vẫn mất box mà Lucas-Kanade cho thấy đứng yên, track chuyển sang `static` chứ không bị xóa.

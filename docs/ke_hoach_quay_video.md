@@ -2,6 +2,7 @@
 
 > **Mục tiêu:** quay dữ liệu đúng giả định "camera cố định" để trừ nền hoạt động được, đủ kịch bản cho mọi phần đánh giá, và có ground truth cho dev và test tách biệt.
 > **Căn cứ:** XLA 2.11, 2.12, 2.15, 3.1, 3.3, 3.5, 3.6, 3.7.
+> **Cập nhật 2026-11-22:** chỉ quay **hành lang có nhiều người đi lại**; cảnh cửa và đếm VÀO/RA đã bỏ (QĐ-21, QĐ-22).
 > **Video thật lấy trên mạng để thử thêm:** xem [tim_video_thuc_te.md](tim_video_thuc_te.md).
 > **Lý do phải quay lại:** video S1 hiện tại được quay cầm tay. Camera trôi khoảng 25 px trong 15 giây, nên trừ nền bắt toàn bộ các cạnh tường (xem QĐ-01 trong [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md)).
 
@@ -23,47 +24,30 @@ Cài cả hai máy giống nhau:
 - Tắt HDR tự động, tắt chế độ làm đẹp, không zoom.
 - Tắt chống rung điện tử nếu máy cho tắt. Khi đã có chân máy, chống rung có thể làm khung hình trôi nhẹ.
 
-## 3. Bố trí camera (chồng vùng nhìn)
+## 3. Bố trí camera: hai góc ở cùng một đầu hành lang (QĐ-22)
 
-- Dùng **2 camera** (thầy cho tối đa 4). Hai camera nhìn **cùng một khu vực** từ hai góc lệch nhau khoảng 45–90°.
-- Đặt máy cao khoảng 1,8–2,5 m và chúc xuống chéo, để thấy **cả người lẫn sàn**.
-- Khi đứng giữa khu vực, người nên cao **ít nhất khoảng 1/3 khung hình**.
-- Cả hai camera phải cùng thấy **ít nhất 4 điểm băng keo**. Các điểm không thẳng hàng và rải rộng khắp vùng đi lại, để tính được homography mặt sàn.
+```
+        đầu xa hành lang
+   ┌───────────────────────┐
+   │                       │
+   │   người đi lại theo   │   hành lang rộng khoảng 3 m
+   │      hai chiều        │
+   │                       │
+   └───────────────────────┘
+ [Cam A] ●             ● [Cam B]
+ (góc trái)           (góc phải)
+        đầu gần (đặt camera)
+```
+
+- Dùng **2 camera** (thầy cho tối đa 4), đặt ở **cùng một đầu hành lang**: một máy ở góc trái, một máy ở góc phải, cả hai nhìn dọc vào trong.
+- Đặt máy cao khoảng 1,8–2,5 m và chúc xuống, để thấy **cả người lẫn sàn** dọc hành lang.
+- Người ở giữa hành lang nên cao ít nhất khoảng 1/4 khung hình. Nếu hành lang quá dài thì chỉ dùng đoạn 8–10 m gần camera.
+- Cả hai camera phải cùng thấy **ít nhất 4 điểm băng keo**. Các điểm không thẳng hàng và rải dọc hành lang, để tính được homography mặt sàn.
 - Tránh những thứ sau trong nền:
   - Kính hoặc gương, vì có phản chiếu.
   - Nắng chiếu thẳng hoặc đèn nhấp nháy.
-  - Cửa đóng mở liên tục (trừ cảnh cửa).
-- Với cảnh cửa: ít nhất một camera phải thấy rõ cửa và lối đi qua cửa.
+  - Cửa đóng mở liên tục.
 - Chụp lại ảnh vị trí chân máy để quay lại đúng như cũ khi cần.
-
-## 3b. Bố trí riêng cho cảnh cửa: hành lang + cửa (QĐ-17)
-
-Cảnh cửa không dùng kiểu "hai camera cùng nhìn một khu vực", mà dùng bố trí giống camera an ninh thật:
-
-```
-             tường đối diện cửa              [Cam B] nhìn thẳng vào cửa
-                                                │
- [Cam A] ●  →  →  người đi dọc hành lang  →  ↘  ▼
- (đầu/góc hành lang)                          ↘
- tường có cửa ──────────────────────────────[ CỬA ]──────
-                                               phòng
-```
-
-- **Camera A** đặt ở đầu hoặc góc hành lang, nhìn dọc hành lang: thấy người đi tới rồi rẽ vào cửa.
-- **Camera B** gắn ở tường đối diện cửa, nhìn thẳng vào cửa: phải thấy **trọn lối cửa và chân người** khi đi qua. Đếm cửa chủ yếu dựa vào camera này.
-- **Vỗ tay ngay ở cửa** lúc bắt đầu, chỗ cả hai camera cùng thấy. Với bố trí này, đồng bộ giờ là **bắt buộc**, vì hai camera được ghép bằng thời gian qua cửa ([07_ghep_su_kien_cua.md](07_ghep_su_kien_cua.md)).
-- Dán **ít nhất 4 điểm băng keo** ở vùng sàn quanh cửa mà cả hai camera cùng thấy, để dùng homography.
-
-Mỗi lượt quay dài 30–40 giây, gồm đủ các tình huống sau:
-
-| Tình huống | Thử điều gì |
-|---|---|
-| 1 người đi dọc hành lang rồi rẽ vào cửa | Trường hợp cơ bản |
-| 2 người vào **lần lượt**, cách nhau 1–2 giây | Ghép đúng thứ tự theo thời gian |
-| 2 người qua cửa **gần như cùng lúc** (cùng chiều, hoặc một vào một ra) | Trường hợp khó; phải nhờ ngoại hình |
-| 1 người **đi ngang qua cửa mà không vào** | Không được đếm nhầm |
-| 1 người từ trong phòng **đi ra** | Đếm RA |
-| 1 người **dừng lại ở cửa** vài giây rồi mới vào | Độ lệch thời gian giữa hai camera lớn hơn |
 
 ## 4. Quy trình mỗi lượt quay
 
@@ -77,16 +61,15 @@ Mỗi lượt quay dài 30–40 giây, gồm đủ các tình huống sau:
 
 ## 5. Danh sách kịch bản
 
-S1–S4 lấy theo roadmap gốc. Nếu roadmap gốc mô tả khác thì sửa bảng này cho khớp.
+Tất cả đều quay trong hành lang, theo bố trí ở mục 3. Các kịch bản giống video tổng hợp v2 ([01_video_tong_hop.md](01_video_tong_hop.md)).
 
 | Kịch bản | Nội dung | Kiểm tra phần nào | Số lượt |
 |---|---|---|---|
-| S1 | 4 người đi qua lại thưa, hạn chế che nhau | C, D, G cơ bản | 2 (dev, test) |
-| S2 | Đi giao cắt và che khuất nhau | D (blob gộp và tách) | 2 |
-| S3 | Một người **đứng yên ít nhất 5 giây** giữa khung | C, D (trạng thái `static`) | 2 |
-| S4 | Trong 4 người có **2 người mặc áo cùng tông màu**; hai người này đi giao cắt nhau | D, G (không dựa vào màu) | 2 |
-| Cửa (**bắt buộc**) | Quay theo **bố trí hành lang + cửa** (mục 3b), gồm đủ các tình huống liệt kê ở đó | E (thầy yêu cầu), ghép hai camera qua cửa | 2 |
-| S5 *(tùy chọn)* | Như S1 nhưng hai camera lệch góc rất lớn | Ablation góc camera (XLA 3.5) | 1–2 |
+| S1 | 4 người đi thưa theo hai chiều, mỗi người một làn | C, D, G cơ bản | 2 (dev, test) |
+| S2 | Đi ngược chiều, đổi làn, cắt nhau và che nhau | D (blob gộp và tách) | 2 |
+| S3 | Một người **đứng yên ít nhất 5 giây**; người khác đi ngang trước mặt | C, D (trạng thái `static`) | 2 |
+| S4 | Trong 4 người có **2 người mặc áo cùng tông màu**; hai người này đi ngược chiều cắt nhau | D, G (không dựa vào màu) | 2 |
+| S5 | 2 người **đi sát nhau thành nhóm** một đoạn rồi tách ra | D (nhóm đi cùng) | 2 |
 
 Tối thiểu cần 5 kịch bản × 2 lượt × 2 camera = **20 video**.
 
@@ -100,7 +83,7 @@ Lưu ý cho báo cáo: dev và test dùng **cùng 4 người**, nên kết quả
    ```
 2. **Xếp file vào thư mục:**
    ```
-   data/real/<dev|test>/<S1|S2|S3|S4|door|S5>/<cam_a|cam_b>/video.mp4
+   data/real/<dev|test>/<S1|S2|S3|S4|S5>/<cam_a|cam_b>/video.mp4
    ```
    Giữ bản gốc ở chỗ khác, không đưa vào repo.
 3. **Đồng bộ.** Tìm frame có tiếng vỗ tay ở mỗi camera. Độ lệch giữa hai camera ghi vào `cameras.cam_b.frame_offset`.

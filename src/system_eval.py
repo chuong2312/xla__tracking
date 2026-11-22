@@ -8,8 +8,6 @@ người trong đáp án trước đã:
 Rồi chấm:
 - Nhận dạng lại: với mỗi người có ở cả hai camera, đúng nếu track chính ở A và track chính ở B
   có cùng global_id (khác −1).
-- Đếm cửa: một lượt của hệ thống khớp với đáp án nếu cùng người, cùng chiều và lệch không quá
-  `tolerance_s` giây.
 """
 from __future__ import annotations
 
@@ -18,7 +16,6 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from src.door import DoorEvent
 from src.metrics import _load_boxes, _match_boxes, default_iou_threshold
 
 
@@ -57,25 +54,3 @@ def evaluate_reid(global_rows: Sequence[tuple[str, int, int]], main_a: Mapping[i
         b = global_ids.get(("cam_b", main_b.get(person_b)), -1)
         correct += int(a != -1 and a == b)
     return {"correct": correct, "total": len(gt_pairs), "accuracy_str": f"{correct}/{len(gt_pairs)}"}
-
-
-def evaluate_door(events: Sequence[DoorEvent], track_to_gt: Mapping[int, int], gt_events_csv: str | Path,
-                  fps: float, tolerance_s: float) -> dict[str, int | str]:
-    """So các lượt qua cửa của hệ thống với đáp án."""
-    with Path(gt_events_csv).open(encoding="utf-8") as stream:
-        truth = [(int(r["frame"]), int(r["gt_id"]), r["direction"]) for r in csv.DictReader(stream)]
-    unused = list(truth)
-    matched = 0
-    for event in events:
-        person = track_to_gt.get(event.track_id)
-        for candidate in unused:
-            frame, gt_id, direction = candidate
-            if gt_id == person and direction == event.direction and abs(frame - event.frame) / fps <= tolerance_s:
-                unused.remove(candidate)
-                matched += 1
-                break
-    return {
-        "dap_an_vao": sum(d == "IN" for _, _, d in truth), "dap_an_ra": sum(d == "OUT" for _, _, d in truth),
-        "he_thong_vao": sum(e.direction == "IN" for e in events), "he_thong_ra": sum(e.direction == "OUT" for e in events),
-        "khop_dung": f"{matched}/{len(truth)}",
-    }

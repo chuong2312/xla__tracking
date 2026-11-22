@@ -2,6 +2,8 @@
 
 1. "median_running" (thuần xử lý ảnh):
    - Khởi tạo: ảnh nền B = trung vị theo thời gian của `init_frames` frame đầu (cảnh trống).
+   - (Tùy chọn) Bù độ sáng: chia frame cho g = trung vị(sáng frame / sáng nền), vì camera hay
+     tự chỉnh độ sáng cả ảnh khi người mặc đồ tối đi vào.
    - Foreground: pixel có ‖I − B‖ > diff_threshold (độ dài vector chênh lệch 3 kênh màu).
    - Khử bóng (Cucchiara 2003): pixel foreground là bóng nếu trong HSV:
        v_min ≤ V_I / V_B ≤ v_max,  |S_I − S_B| ≤ s_max,  |H_I − H_B| ≤ h_max
@@ -59,10 +61,28 @@ class MedianRunningBackground:
                 self.background = np.median(np.stack(self._buffer), axis=0).astype(np.float32)
                 self._buffer.clear()
             return np.zeros(frame_bgr.shape[:2], dtype=np.uint8)
-        difference = np.linalg.norm(frame_bgr.astype(np.float32) - self.background, axis=2)
+        frame = frame_bgr.astype(np.float32)
+        if self._cfg.get("exposure_compensation", False):
+            frame = frame / self._exposure_gain(frame)
+        difference = np.linalg.norm(frame - self.background, axis=2)
         foreground = difference > self._threshold
         foreground &= ~shadow_mask(frame_bgr, self.background.astype(np.uint8), self._cfg)
         return foreground.astype(np.uint8) * 255
+
+    def _exposure_gain(self, frame: np.ndarray) -> float:
+        """Tỉ lệ sáng chung giữa frame và nền: g = trung vị(độ sáng frame / độ sáng nền).
+
+        Camera điện thoại / camera an ninh thường tự chỉnh độ sáng khi có người mặc đồ tối đi
+        vào, làm CẢ ảnh sáng hoặc tối đi. Người chỉ chiếm một phần nhỏ của ảnh, nên trung vị
+        của tỉ lệ phản ánh độ sáng chung; chia frame cho g trước khi so với nền thì phần nền
+        không còn bị tưởng là chuyển động.
+        """
+        bright = frame.mean(axis=2)
+        reference = self.background.mean(axis=2)
+        valid = reference > 10
+        if not np.any(valid):
+            return 1.0
+        return float(np.clip(np.median(bright[valid] / reference[valid]), 0.5, 2.0))
 
     def update(self, frame_bgr: np.ndarray, exclude_mask: np.ndarray) -> None:
         """Cập nhật nền ở những pixel không bị loại trừ (không thuộc người đang theo dõi)."""

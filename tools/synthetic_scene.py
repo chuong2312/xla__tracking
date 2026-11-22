@@ -1,4 +1,4 @@
-"""Các khối dựng "sân khấu" cho video tổng hợp v2: người, bố trí sàn – camera, kịch bản (QĐ-16, QĐ-17).
+"""Các khối dựng "sân khấu" cho video tổng hợp v2: người, bố trí sàn – camera, kịch bản (QĐ-16, QĐ-22).
 
 Mọi vị trí của người được tính trên MẶT SÀN, đơn vị mét. Mỗi camera có một
 homography "sàn → ảnh", nên cùng một người có đáp án đúng ở mọi camera.
@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from src.door import signed_distance, within_door
 from src.homography import project
 
 IMAGE_SIZE = (640, 360)
@@ -59,19 +58,14 @@ class Layout:
     """Một cách bố trí sàn và camera.
 
     - floor_rect_m: (x_min, y_min, x_max, y_max), phần sàn được tô màu.
-    - room_rect_m: phần sàn phía sau cửa (trong phòng), tô tối hơn; None nếu không có.
     - camera_views: với mỗi camera, 4 điểm trên sàn và 4 điểm tương ứng trong ảnh,
       đủ để tính homography sàn → ảnh.
-    - door_m: hai đầu vạch cửa trên sàn; door_inside_point_m: một điểm ở phía "bên trong".
     - tape_marks_m: các điểm băng keo (dùng để thử công cụ click điểm sàn).
     """
 
     name: str
     floor_rect_m: tuple[float, float, float, float]
-    room_rect_m: tuple[float, float, float, float] | None
     camera_views: Mapping[str, tuple[Quad, Quad]]
-    door_m: tuple[Point, Point]
-    door_inside_point_m: Point
     tape_marks_m: tuple[Point, ...]
 
 
@@ -97,12 +91,6 @@ def floor_to_image(layout: Layout, camera: str) -> np.ndarray:
     return cv2.getPerspectiveTransform(np.float32(floor_quad), np.float32(image_quad)).astype(np.float64)
 
 
-def door_line(layout: Layout) -> tuple[float, float, float, float]:
-    """Vạch cửa trên sàn dạng (x1, y1, x2, y2)."""
-    (x1, y1), (x2, y2) = layout.door_m
-    return (x1, y1, x2, y2)
-
-
 def pixels_per_meter(H: np.ndarray, x: float, y: float, delta: float = 0.05) -> float:
     """Tỉ lệ pixel trên mét ở chỗ (x, y) trên sàn: s = √|det J|.
 
@@ -126,26 +114,3 @@ def person_box(H: np.ndarray, x: float, y: float) -> tuple[float, float, float, 
 def n_frames(fps: float) -> int:
     """Số frame của mỗi kịch bản."""
     return int(round(DURATION_SECONDS * fps))
-
-
-def door_events(scenario: Scenario, fps: float) -> list[tuple[int, int, str]]:
-    """Đáp án sự kiện qua cửa, tính trên sàn bằng đúng công thức của src/door.py nhưng không có vùng đệm.
-
-    Một lượt được ghi ở frame đầu tiên người đã sang phía bên kia vạch, khi chân
-    nằm trong bề rộng cửa. Sang phía có `door_inside_point_m` là IN, ngược lại là OUT.
-    """
-    line = door_line(scenario.layout)
-    inside_sign = 1 if signed_distance(line, scenario.layout.door_inside_point_m) > 0 else -1
-    events: list[tuple[int, int, str]] = []
-    for person in scenario.people:
-        previous: int | None = None
-        for frame in range(n_frames(fps)):
-            position = person.position(frame / fps)
-            if position is None:
-                previous = None
-                continue
-            side = 1 if signed_distance(line, position) > 0 else -1
-            if previous is not None and side != previous and within_door(line, position):
-                events.append((frame, person.gt_id, "IN" if side == inside_sign else "OUT"))
-            previous = side
-    return sorted(events)

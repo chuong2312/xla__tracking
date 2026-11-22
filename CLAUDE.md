@@ -8,7 +8,7 @@ Always reply to the user in Vietnamese (luôn trả lời người dùng bằng 
 
 ## Project
 
-This is an image-processing course project (đồ án Xử lý ảnh). It detects and tracks several people in video from a fixed camera. Later stages are planned but not built yet: door-crossing events, ORB/SIFT features, and Re-ID across cameras (cam_a ↔ cam_b). The README, docstrings, comments, config comments and error messages are all in Vietnamese. Keep them in Vietnamese, because some tests match parts of the Vietnamese messages (for example `match="Thiếu section"` and `"ngoài khung"`).
+This is an image-processing course project (đồ án Xử lý ảnh). It detects and tracks several people walking in a corridor, filmed by two fixed cameras, and re-identifies them across the cameras (cam_a ↔ cam_b). Door IN/OUT counting was dropped (QĐ-21). The README, docstrings, comments, config comments and error messages are all in Vietnamese. Keep them in Vietnamese, because some tests match parts of the Vietnamese messages (for example `match="Thiếu section"` and `"ngoài khung"`).
 
 ### Hard constraint: no YOLO, no deep learning, no machine learning
 Use only classical image processing, estimation and combinatorial optimisation. That covers optical flow, morphology, connected components, histograms, RANSAC, Hungarian, Kalman and hand-crafted descriptors.
@@ -29,9 +29,10 @@ On 2026-11-21 the team approved a redesign that follows XLA.md. It is described 
 - `docs/tu_dien_thuat_ngu.md`: a plain-Vietnamese glossary. The user has never studied image processing. When talking to them, explain technical terms in Vietnamese, and add every new technical term to this file.
 - `docs/cau_hoi_thay.md`: questions for the teacher. All were answered on 2026-11-21:
   - Allowed: AI-assisted coding, MOG2, "auto SIFT", library functions instead of hand-written algorithms, Kalman, and the floor homography.
-  - IN/OUT door counting is **required**.
+  - IN/OUT door counting is **required**. But the team **dropped it on 2026-11-22 (QĐ-21)**, against the teacher's answer. The door code is preserved in commit `827121c` on `redesign`. Don't re-add it unless the user asks.
   - At most 4 fixed cameras.
 - `docs/ke_hoach_quay_video.md`: the plan for re-shooting with a tripod, two overlapping cameras and a floor homography.
+- `docs/13_noi_tracklet.md`: tracklet linking.
 - `docs/tim_video_thuc_te.md`: requirements, a checklist of corridor conditions, search keywords and public datasets for extra real test video from the internet. Put that video in `data/real/internet/<name>/cam_a/` together with a `nguon.txt` that records the source and licence.
 
 Team choices (2026-11-21):
@@ -46,7 +47,6 @@ Groundwork that doesn't need real video was built on 2026-11-21. Each piece is a
 - `src/homography.py` and `tools/calibrate_floor.py`: floor homography.
 - `src/assignment.py`: shared Hungarian assignment (`assign`, `iou_cost`, `FORBIDDEN_COST`).
 - `src/kalman.py`: `ConstantVelocityKalman`, configured by the `kalman` section.
-- `src/door.py`: `DoorCounter` using foot point, signed distance and hysteresis. It is configured by `events.crossing_margin` and `events.inside_side`.
 - `src/mot_metrics.py`: MOTA, MOTP and IDF1, also printed by `python -m src.metrics track`.
 - Appearance features (step F):
   - `src/gallery.py`: picks the K best clean, non-border, well-spaced observations per track.
@@ -56,7 +56,6 @@ Groundwork that doesn't need real video was built on 2026-11-21. Each piece is a
   - `src/reid_similarity.py`: keypoint score (ratio test, vertical constraint, optional RANSAC), colour score, floor-geometry score, and the weighted combination.
   - `src/reid.py`: describes tracks, builds the score tables `ngoai_hinh` and `ngoai_hinh_san` (always report them separately), and assigns global IDs with Hungarian and `reid.match_threshold`.
   - `tools/run_reid.py` runs oracle mode on a synthetic scene and scores it with `src.metrics.reid_metrics` and `rank1`. `tools/explain_reid.py` draws the tables and keypoint matches. End-to-end mode waits for the new tracker.
-- `src/door_matching.py`: links door events across two synchronised cameras by time and direction, using Hungarian on the time gap with `reid.door_event_max_gap_s` (QĐ-18).
 - Synthetic video v2:
   - `tools/synthetic_scene.py`: classes and geometry (`Person`, `Layout`, `Scenario`).
   - `tools/synthetic_scenarios.py`: data (`LAYOUTS`, `SCENARIOS`).
@@ -64,21 +63,23 @@ Groundwork that doesn't need real video was built on 2026-11-21. Each piece is a
   - `tools/make_synthetic_v2.py`: the CLI.
 
 The new end-to-end system (phase 2) wires these modules together. It is documented in `docs/10_tim_nguoi.md`, `docs/11_tracker_moi.md` and `docs/12_he_thong.md`:
-- `src/background.py` and `src/detection.py`: step C. `PersonDetector` uses the median background with selective update (or MOG2), and is configured by the `detection` section.
+- `src/background.py` and `src/detection.py`: step C. `PersonDetector` uses MOG2 by default since QĐ-25, with `mog2_learning_rate` 0.001 since QĐ-28 (0.005 absorbed people standing still within about 8 s; the median background with selective update stays for comparison but gives 14–20% false foreground on EPFL), and is configured by the `detection` section.
+- `src/height_model.py` (QĐ-26): `pipeline.estimate_heights` runs the detector without grouping on the first `detection.height_model.frames` frames. It fits the expected person height `h = a·y_foot + b` with Theil–Sen (median of pairwise slopes; least squares was dragged down by a truncated-people bin at the image edge) through the 90th-percentile height per foot-y bin and writes `height_model.json`. The detector then joins vertically stacked pieces (head and legs of a person in dark clothes) only when the joined box is at most `group_max_height_ratio × h`. Plain "stacked" grouping and tracker-side fragment removal (`fragment_max_vertical_overlap`, off with −1) were tried and hurt the corridor scenes, because a far person sits right above a near one.
 - Step D, configured by the `people_tracker` section:
   - `src/people_tracker.py` holds the `PeopleTracker` state machine: tentative, confirmed, merged, static, lost.
   - `src/track.py`, `src/optical_flow.py`, `src/blob_analysis.py` and `src/recovery.py` are its parts.
-  - The rules found by testing: implausible-size detections that overlap another track don't update position or size; split pieces are joined only when vertically stacked; during a merge only the front track (largest bottom y) keeps LK.
+  - The rules found by testing: implausible-size detections that overlap another track don't update position or size; split pieces are joined only when vertically stacked; during a merge only the front track (largest bottom y) keeps LK; merge membership has hysteresis (enter at `merge_coverage` 0.6, stay at `merge_keep_coverage` 0.3); recovery after a merge refuses detections with colour similarity < `recover_min_color_similarity` (QĐ-24); when a height model exists, a detection may start a new track only if `tall_enough` (h ≥ `new_track_min_height_ratio` 0.6 × expected height, or touching the image border within `new_track_border_px`), which cut EPFL IDs from about 195 to about 75 per camera with unchanged synthetic scores (QĐ-27). The switches `appearance_weight`, `appearance_update_rate` and `template_search` exist only for ablation; they are off by default because they made results worse.
 - `src/pipeline.py`: `process_camera` runs C → D → E for one camera and writes `detections.csv` and `tracks.csv`, plus `debug.mp4` with `--debug-video`.
-- `src/system_eval.py`: end-to-end scoring. It maps each track to a GT ID by majority IoU vote, uses the main track per person, and scores door events and Re-ID.
-- `run.py --scene <dir> [--out] [--debug-video]` runs both cameras, Re-ID, door links and the summary, writing to `outputs/he_thong/<scene>/`.
+- `src/system_eval.py`: end-to-end scoring. It maps each track to a GT ID by majority IoU vote, uses the main track per person, and scores Re-ID.
+- `src/tracklet_linking.py`: post-hoc linking of broken tracks within one camera (QĐ-23). It uses the time gap, the predicted position from the end velocity and colour similarity, linked with Hungarian, and is configured by the `tracklet_linking` section. `run.py` writes `tracks_linked.csv` and reports MOT before and after linking.
+- `run.py --scene <dir> [--out] [--debug-video]` runs both cameras, tracklet linking, Re-ID and the summary, writing to `outputs/he_thong/<scene>/`.
 - `src/metrics.py` now scores track states `confirmed`, `merged` and `static` (`SCORED_TRACK_STATES`).
 
 The team writes code with AI help and has to defend every line in front of the teacher. Rules for new code:
 - One concept per file, under about 200 lines, with short functions.
 - Never put several statements on one line with `;`.
 - Docstrings in Vietnamese that explain *why* and give the formula.
-- Every threshold lives in config, with a comment giving its meaning and unit.
+- Every threshold lives in config, with a comment giving its meaning and unit. The user tunes parameters themselves using `docs/14_hieu_chinh_tham_so.md` and `tools/hieu_chinh.py`; don't change tuned values without being asked, and keep that doc in sync when adding a knob.
 - Keep diagnostics and logging out of the algorithm code.
 - A finished module ships with three things: `docs/NN_<module>.md` (problem → algorithm → formula → parameters → failure cases → likely teacher questions), an `--explain` visualisation of each step, and new entries in `docs/hoi_dap_bao_ve.md`. After that, explain the module to the user in chat in plain Vietnamese and ask only the 1–2 core questions they must be able to answer at the defense (for example "what does this step do and why" or "is this ML"). Skip detail questions.
 
@@ -104,15 +105,16 @@ python tools/annotate.py  --video <video> --out <gt.csv> [--size 640 360]   # op
 python tools/verify_gt.py --video <video> --gt <gt.csv> --out outputs/gt_check.mp4 [--size 640 360]
 
 # Redesign groundwork (standalone, not yet wired into the tracker)
-python -m tools.make_synthetic_v2 --out data/synthetic_v2 [--scenario s1 s2 s3 s4 door] --explain outputs/explain/video_tong_hop   # ~1 min
+python -m tools.make_synthetic_v2 --out data/synthetic_v2 [--scenario s1 s2 s3 s4 s5] --explain outputs/explain/video_tong_hop   # ~1 min
 python tools/calibrate_floor.py --cam-a <video_a> --cam-b <video_b> --out <homography.json> [--explain <png>]
 python -m tools.explain_assignment    # writes outputs/explain/ghep_cap/
 python -m tools.explain_kalman        # writes outputs/explain/kalman/
-python -m tools.explain_door          # writes outputs/explain/dem_qua_cua/
-python -m tools.explain_door_matching # writes outputs/explain/ghep_su_kien_cua/
-python run.py --scene data/synthetic_v2/hanh_lang_cua [--debug-video]   # WHOLE SYSTEM, both cameras, writes outputs/he_thong/<scene>/summary.json
+python run.py --scene data/synthetic_v2/s2 [--debug-video]   # WHOLE SYSTEM, both cameras, writes outputs/he_thong/<scene>/summary.json
 python -m tools.run_reid --scene data/synthetic_v2/s4 [--method sift|orb|sift_auto|asift]   # oracle Re-ID + scores
 python -m tools.explain_reid --scene data/synthetic_v2/s4 --person 3   # writes outputs/explain/nhan_dang_lai/
+python -m tools.explain_height_model --video data/real/4p-c1.mp4 --frame 1800   # writes outputs/explain/chieu_cao/
+python -m tools.epfl_homography --calib data/real/epfl_4p_c0_c1/calibration-4p.txt --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1 [--explain <png>]   # EPFL calibration → homography.json (H_AB = G_B⁻¹·G_A)
+python -m tools.hieu_chinh [--set "section.key=[v1, v2]" ...] [--no-real]   # one-at-a-time parameter sweep: synthetic s1–s5 MOTA/IDF1/Re-ID + EPFL ID counts; writes outputs/hieu_chinh/<time>/bang_diem.csv
 ```
 
 The video in `data/synthetic_v2` is 640×360, but `config.yaml` still resizes to 640×480. So pass `--size 640 360` to `verify_gt.py` and `annotate.py` when you use them on that data.
@@ -130,7 +132,7 @@ Every box is `(x, y, w, h)` in integer pixels of the **resized** frame. All pixe
 - `load_config` checks that the sections `scene, detector, tracker, events, features, reid, benchmark` exist, and checks the keys inside `scene`. It returns an `AppConfig` in which every section except `scene` is a raw dict. `SceneConfig` drops `ignore_regions`, so the entry points read the YAML a second time and pass `Detector({"detector": cfg.detector, "scene": raw["scene"]})`.
 - `metrics` is not a section of `AppConfig`. The `src/metrics.default_*` functions read `config.yaml` from the repo root directly and ignore `--config`.
 - `Detector` and `Tracker` accept either a Mapping or an object with attributes. Each checks every key itself and has **no defaults**. When you add a `tracker.*` key, also add it to the config dicts built by the helpers (`config()`, `cfg()`, `_cfg()`) at the top of each `tests/test_tracker*.py`. Otherwise those tests raise `ValueError: Thiếu tracker.<key>`.
-- The `events`, `features`, `reid` and `benchmark` sections have no code that reads them yet. Door counting, ORB/SIFT, Re-ID and benchmarking are not implemented. Re-ID scoring already exists in `src/metrics` (`reid_metrics`, `rank1`, `confusion_matrix`).
+- In the OLD code, nothing reads the `events`, `features`, `reid` and `benchmark` sections. The new system reads `features`, `reid`, `detection`, `people_tracker`, `kalman`, `tracklet_linking` and `homography`. `events` is now empty (door counting was dropped) and `benchmark` is still unused.
 
 ### Detector (`src/detector.py`)
 The steps run in this order:
@@ -190,20 +192,19 @@ The tests build textured frames with NumPy and pass in exact ("oracle") detectio
 | detections | `frame,x,y,w,h,area` |
 | tracks | `frame,track_id,state,x,y,w,h,n_points` |
 | gt_tracking | `frame,gt_id,x,y,w,h` plus, in the new format (QĐ-15), `occluded` (0/1/2) and `keyframe` (1 = hand-labelled) |
-| gt_events (synthetic v2) | `frame,gt_id,direction` |
 | gt_reid | `person,cam_a_id,cam_b_id` |
 | global_ids | `cam,track_id,global_id` |
 | reid scores | `cam_a_track,cam_b_track,method,score` |
 
 - Synthetic data lives in `data/synthetic/<scenario>/{cam_a,cam_b}/{video.mp4,metadata.json}` with a `gt_tracking.csv` next to the camera folders. That ground truth covers **cam_a only**. Synthetic video is 640×480 at 20 fps.
 - `detection_pr` checks whether the ground truth has the new columns. If it does, it scores only frames where every box is hand-labelled and none has `occluded == 2` (`scored_frames`). Old-format files are scored on every frame, as before.
-- Synthetic v2 has two layouts. `san_chung` (QĐ-02) is used by s1–s4 and door. `hanh_lang` (QĐ-17) is a corridor with a side door: cam_a looks down the corridor and cam_b faces the door. It is used by `hanh_lang_cua`.
-- Synthetic v2 data lives in `data/synthetic_v2/<s1|s2|s3|s4|door|hanh_lang_cua>/`:
+- Synthetic v2 has a single layout `hanh_lang` (QĐ-22). It is a 3 m × 10 m corridor with cam_a and cam_b at the same end (left and right corners), both looking down the corridor. There are 5 scenarios with 4 people each: s1 sparse, s2 crossing, s3 one person standing still, s4 two people with identical clothes, s5 a pair walking together then splitting.
+- Synthetic v2 data lives in `data/synthetic_v2/<s1…s5>/`:
   - `{cam_a,cam_b}/` holds `video.mp4`, `gt_tracking.csv` (one per camera; each box covers the visible part only) and `metadata.json`.
-  - `gt_reid.csv` and `gt_events.csv` are shared by both cameras.
-  - `scene.json` holds the floor→image homography of each camera, `H_ab`, the door line and inside side in image coordinates, and the tape-mark positions.
+  - `gt_reid.csv` is shared by both cameras.
+  - `scene.json` holds the floor→image homography of each camera, `H_ab` and the tape-mark positions.
   - The video is 640×360 at 30 fps. The first 2 seconds show an empty scene.
-  - `s2` has one frame where person 1 is fully hidden, so `verify_gt` reports a "lỗ hổng frame" warning for that person. That warning is expected.
+- `data/real/4p-c0..c3.mp4` are the user's EPFL "Laboratory 4p" videos: 360×288, 25 fps, about 157 s each, with no ground truth yet. `data/real/epfl_4p_c0_c1/{cam_a,cam_b}/video.mp4` are symlinks to c0 and c1, so `run.py --scene data/real/epfl_4p_c0_c1` works. That folder also holds EPFL's `calibration-4p.txt`, a `nguon.txt` (source, research-only licence, citation) and the `homography.json` built from it. After QĐ-27/28 (about 50 IDs per camera) the main remaining failure is the detector: only about 2.6 full-height boxes per frame for up to 4 people, mostly people in dark clothes walking in front of dark backgrounds. The numbers are in `docs/12_he_thong.md`.
 - `data/real/dev/S1/cam_a/video.mp4` is real footage at 1024×576 and 30 fps. Resizing it to the 640×480 `scene` size changes its aspect ratio. Ground truth and thresholds for it must use resized coordinates.
 - `outputs/` is git-ignored except for `outputs/README.md`, which describes each folder. Earlier runs are grouped as `outputs/synthetic_d2/NN_*` (in time order) and `outputs/real_dev_S1/{base,lr01,r1}`. Put each new run in its own `outputs/<stage>/<NN_name>/` folder, together with the config it used.
 - `.gitignore` covers `.venv/`, Python caches, `outputs/*` and Windows `*:Zone.Identifier` files. `data/real/` is not ignored, but it isn't committed yet either.

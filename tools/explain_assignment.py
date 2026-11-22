@@ -1,7 +1,7 @@
 """Ảnh minh họa cho ghép cặp Hungarian (src/assignment.py).
 
 Cách dùng:
-    python -m tools.explain_assignment --scene data/synthetic_v2/s2 --camera cam_b --frame 174 --out outputs/explain/ghep_cap
+    python -m tools.explain_assignment --scene data/synthetic_v2/s2 --camera cam_b --frame 188 --out outputs/explain/ghep_cap
 
 Giả lập một bước của tracker: "box dự đoán" lấy từ đáp án của vài frame trước
 (như thể đoán vị trí cũ), "box phát hiện" lấy từ đáp án của frame hiện tại.
@@ -45,7 +45,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Minh họa ghép cặp Hungarian")
     parser.add_argument("--scene", type=Path, default=Path("data/synthetic_v2/s2"))
     parser.add_argument("--camera", default="cam_b")
-    parser.add_argument("--frame", type=int, default=174)
+    parser.add_argument("--frame", type=int, default=188)
     parser.add_argument("--lag", type=int, default=4, help="box dự đoán lấy từ đáp án cách bao nhiêu frame trước")
     parser.add_argument("--out", type=Path, default=Path("outputs/explain/ghep_cap"))
     args = parser.parse_args()

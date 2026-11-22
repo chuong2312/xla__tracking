@@ -65,7 +65,22 @@ Pixel bóng bị bỏ khỏi foreground (Cucchiara 2003). Phản chiếu trên k
 **Vì sao kernel closing là 3×9?** *(chưa cài)*
 Kernel thiên dọc nối được thân với chân khi chúng bị đứt (do quần áo trùng màu nền), mà ít nối ngang hai người đứng cạnh nhau. Có ablation so với kernel vuông.
 
+**Một người bị đứt thành đầu và chân thì xử lý thế nào?** (QĐ-26)
+- Camera nhìn từ trên xuống nên người càng gần (chân càng thấp trong ảnh) thì càng cao. Hệ thống tự ước lượng đường thẳng `h = a·y_chân + b` từ các frame đầu: trong mỗi dải vị trí chân, lấy phân vị 90% chiều cao box (mảnh người thấp, người nguyên vẹn cao), rồi kẻ đường bằng Theil–Sen (trung vị độ dốc các cặp điểm) để không bị điểm lạ ở mép ảnh kéo lệch.
+- Hai mảnh xếp trên – dưới chỉ được gộp khi box gộp không cao quá 1,15 lần chiều cao mong đợi. Hai người đứng trước – sau gộp lại thì cao hơn hẳn, nên không bị gộp.
+- Đây là thống kê và kẻ đường thẳng, không phải học máy.
+
+**MOG2 có làm mất người đứng yên không? Giải quyết thế nào?** (QĐ-28)
+Có. MOG2 cập nhật nền ở mọi pixel, kể cả chỗ có người, nên người đứng yên lâu dần bị coi là nền. Tốc độ "quên" (learning rate) quyết định bao lâu: nền cần khoảng 1/rate frame để theo kịp. Nhóm hạ từ 0,005 (khoảng 8 giây) xuống 0,001 (khoảng 40 giây). Kết quả: cảnh tổng hợp có người đứng yên (`s3`) tăng MOTA cam A từ 0,66 lên 0,93; số ID trên EPFL giảm 85 → 54 và 66 → 48. Đổi lại, khi đèn đổi đột ngột, nền theo kịp chậm hơn.
+
+**Vì sao chọn MOG2 làm mặc định?** (QĐ-25)
+Trên video thật EPFL không có cảnh trống ở đầu và ánh sáng nhấp nháy. Trừ nền trung vị báo nhầm khoảng 15% ảnh, MOG2 chỉ 5%. MOG2 chỉ tìm vùng chuyển động, không biết đâu là người.
+
 ## Bám người (D)
+
+**Vì sao khung thấp không được tạo track mới?** (QĐ-27)
+Trên video thật, người mặc áo đen trước tường tối bị tách thành mảnh đầu và mảnh chân. Nếu mỗi mảnh sinh một track thì một người có nhiều tên. Đo trên EPFL: các track trùng đó chỉ sống khoảng 1,4 giây rồi chết. Vì vậy chỉ khung cao ít nhất 60% chiều cao người mong đợi mới được tạo track mới; khung chạm mép ảnh được miễn. Số ID giảm hơn một nửa mà điểm trên video tổng hợp không đổi. Ngưỡng 0,6 được chọn bằng hiệu chỉnh tham số (thử 0 / 0,4 / 0,5 / 0,6 / 0,7).
+
 
 **Vì sao dùng Lucas-Kanade mà không dùng Farneback?** (XLA 2.13, câu trả lời đã sửa)
 - LK là sparse: chỉ tính flow tại các điểm góc tốt, nơi bài toán có điều kiện tốt. Vì vậy LK rẻ và đủ để dịch box.
@@ -170,23 +185,20 @@ Bảng chi phí [[1, 2], [2, 100]]. Ghép tham lam lấy ô 1 trước, rồi bu
 **Giá trị `acceleration_std_px = 0,1` của Kalman chọn thế nào?** ([04](04_kalman.md))
 Quét lưới 5 giá trị trên quỹ đạo của video tổng hợp, đo độ lệch sau 30 frame bị che: giá trị cũ 0,5 lệch 24,7 px, còn 0,1 lệch 6,9 px. Nhóm không chọn giá trị nhỏ nhất, vì người thật hay rẽ; khi có video dev thật sẽ hiệu chỉnh lại.
 
-**Vì sao bộ đếm cửa dùng điểm chân và có vùng đệm?** ([05](05_dem_qua_cua.md))
-Cửa nằm trên sàn, và chân luôn chạm sàn bất kể người cao hay thấp. Vùng đệm để người đứng rung ngay trên vạch không bị đếm vào, ra liên tục.
-
-**Hai người qua cửa cùng lúc theo hai chiều thì sao?** ([05](05_dem_qua_cua.md))
-Mỗi track được theo dõi riêng, nên vẫn đếm đúng. Trên kịch bản `door`, người 3 và người 4 qua cửa cùng ở frame 229 và vẫn đếm đúng VÀO 2, RA 2. Chỉ hỏng khi hai người dính thành một box.
-
 **MOTA có thể âm không?** ([06](06_cham_diem_mota_idf1.md))
 Có, khi tổng số bỏ sót, báo nhầm và đổi tên nhầm nhiều hơn tổng số box trong đáp án. Thường do báo nhầm rất nhiều.
-
-**Với cảnh cửa, làm sao biết người ở camera A là ai ở camera B?** ([07](07_ghep_su_kien_cua.md))
-Hai camera đã đồng bộ giờ, nên một lượt VÀO ở camera A và một lượt VÀO ở camera B xảy ra gần như cùng lúc được coi là cùng một người. Nhóm ghép các lượt cùng chiều theo độ lệch thời gian bằng Hungarian. Khi hai người qua cửa gần như cùng lúc thì phải dựa thêm vào ngoại hình và vị trí trên sàn.
 
 **Làm sao biết người ở camera A là ai ở camera B?** ([09](09_nhan_dang_lai.md))
 Mỗi cặp (người ở A, người ở B) được tính ba điểm giống nhau: keypoint, màu quần áo, và vị trí sàn (bổ trợ). Gộp ba điểm lại, rồi ghép một-một bằng Hungarian; cặp có điểm dưới ngưỡng thì để "không khớp ai". Kết quả "chỉ ngoại hình" và "ngoại hình + sàn" được báo cáo riêng.
 
 **Hệ thống chạy thế nào từ đầu đến cuối?** ([12](12_he_thong.md))
-Mỗi camera làm 3 việc: tìm người bằng trừ nền, bám người bằng Kalman + Lucas-Kanade + Hungarian, và đếm qua cửa. Sau đó, mô tả ngoại hình từng người và ghép người giữa hai camera; với cảnh cửa thì ghép thêm theo thời gian qua cửa. Lệnh `run.py` làm tất cả các bước và tự chấm điểm nếu có đáp án.
+Mỗi camera: tìm người bằng trừ nền, bám người bằng Kalman + Lucas-Kanade + Hungarian, rồi nối các đoạn track bị đứt của cùng một người. Sau đó, mô tả ngoại hình từng người và ghép người giữa hai camera. Lệnh `run.py` làm tất cả các bước và tự chấm điểm nếu có đáp án.
 
 **Hai người đi qua nhau, tracker làm sao giữ đúng tên?** ([11](11_tracker_moi.md))
 Tracker nhận ra box chứa 2 người trước khi ghép, và không dùng box đó. Trong lúc dính nhau, người đứng trước (gần camera hơn) vẫn bám bằng Lucas-Kanade, người đứng sau đi theo Kalman. Khi tách ra thì ghép lại bằng vị trí đoán, ảnh mẫu và màu áo.
+
+**Vì sao cần nối tracklet?** ([13](13_noi_tracklet.md))
+Một người bị mất dấu rồi xuất hiện lại thì nhận ID mới. Bước nối tracklet chạy sau khi bám người xong: đoạn sau phải bắt đầu sau đoạn trước, ở gần chỗ đoán theo vận tốc, và có màu áo giống. Nhờ vậy một người giữ được một ID, và nhận dạng lại giữa hai camera đúng hơn.
+
+**Vì sao tracker hay tráo tên khi nhiều người dính nhau lâu, và nhóm sửa thế nào?** ([11](11_tracker_moi.md))
+Người ở mép cụm gộp chập chờn quanh ngưỡng "trong cụm / ngoài cụm", bị tính là mất dấu rồi bị xóa. Khi người đó hiện ra, track của người khác lấy mất box của họ. Nhóm sửa bằng **ngưỡng có độ trễ**: vào cụm cần 60% box nằm trong cụm, nhưng đã ở trong cụm thì chỉ cần 30%. Nhóm cũng cấm ghép lại nếu màu áo khác hẳn. IDF1 trung bình tăng từ 0,783 lên 0,806.

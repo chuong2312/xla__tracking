@@ -1,5 +1,6 @@
 # Đề xuất phương án: Theo dõi nhiều người và Định danh đa camera
 
+> **Cập nhật 2026-11-22 (QĐ-21, QĐ-22):** đã BỎ bước E (đếm VÀO/RA qua cửa) và chỉ dùng video hành lang, hai camera ở cùng một đầu. Các đoạn nói về bước E dưới đây chỉ còn giá trị lịch sử.
 > **Trạng thái:** đề xuất, ngày 2026-11-21; cùng ngày đã cập nhật theo câu trả lời của thầy (mục 3). Code hiện tại (tracker LK cũ, detector MOG2) **chưa** theo kiến trúc này. Việc viết lại bắt đầu từ giai đoạn 2 (mục 7).
 > **Căn cứ:** mọi lựa chọn bám theo `XLA.md` (bản review roadmap). Ký hiệu *XLA 2.4* nghĩa là mục 2.4 trong file đó.
 > **Tài liệu đi kèm:** [cau_hoi_thay.md](cau_hoi_thay.md) · [ke_hoach_quay_video.md](ke_hoach_quay_video.md) · [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md) · [hoi_dap_bao_ve.md](hoi_dap_bao_ve.md) · [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md) (gặp từ khó thì tra ở đây)
@@ -11,13 +12,13 @@
 **Đầu ra:**
 1. **ID cục bộ:** trong mỗi camera, mỗi người có một ID giữ nguyên suốt thời gian xuất hiện (`tracks.csv`).
 2. **ID toàn cục:** nối track ở cam A với đúng người đó ở cam B (`global_ids.csv`).
-3. **Sự kiện qua cửa:** danh sách các lượt vào và ra (`events.csv`).
+3. ~~**Sự kiện qua cửa**~~: đã bỏ (QĐ-21).
 4. **Bảng số liệu đánh giá trung thực:** đúng bao nhiêu, sai ở đâu, vì sao sai.
 
 **Pipeline.** Mỗi camera chạy lần lượt C → D → E → F, sau đó bước G ghép kết quả của hai camera:
 
 ```
-video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người ─► track ─► [E] Đếm qua cửa ─► events.csv
+video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người ─► track ─► nối track bị đứt
               │ foreground mask                               │
               └─────────────────────────────►[F] Đặc trưng ◄──┘
                                                    │ gallery của mỗi track
@@ -31,7 +32,7 @@ video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người
 |---|---|---|
 | C | Ước lượng ảnh nền (trung vị của vài giây cảnh trống, hoặc MOG2). Pixel nào khác nền quá ngưỡng là foreground, tức vùng chuyển động. Lọc theo hình dạng xong mới ra các box ứng viên là người. | Ước lượng thống kê về nền theo công thức cố định, không có nhãn hay tập huấn luyện. Thầy đã cho dùng MOG2. |
 | D | Kalman đoán vị trí tiếp theo theo vận tốc. Lucas-Kanade đo chuyển động thật từ ảnh. Hungarian ghép box đoán với box phát hiện. | Đây là ước lượng (Kalman; LK giải bình phương tối thiểu) và tối ưu tổ hợp (Hungarian). |
-| E | Điểm chân của người đi qua hẳn vạch cửa, vượt cả vùng đệm, thì ghi một sự kiện IN hoặc OUT. | Hình học thuần. |
+| ~~E~~ | Đã bỏ (QĐ-21). | |
 | F | Mỗi track giữ vài ảnh crop đẹp nhất. Từ đó trích keypoint SIFT/ORB và histogram màu. | Đặc trưng thủ công, có thiết kế cố định. |
 | G | Độ giống nhau tính từ keypoint khớp và màu, cộng thêm thông tin bổ trợ là vị trí trên mặt sàn qua homography. Hungarian ghép người ở A với người ở B. | So khoảng cách rồi tối ưu tổ hợp; trọng số chọn bằng quét lưới. |
 
@@ -58,7 +59,7 @@ video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người
 | Auto SIFT | Được dùng |
 | Dùng thư viện có sẵn (OpenCV, SciPy) | Được dùng |
 | Kalman | Được dùng |
-| Đếm người IN/OUT | **Bắt buộc** |
+| Đếm người IN/OUT | **Bắt buộc** (nhóm đã bỏ ngày 2026-11-22, QĐ-21; cần trao đổi lại với thầy) |
 | Số camera | Tối đa 4 camera cố định |
 | Homography mặt sàn | Được dùng |
 
@@ -66,7 +67,7 @@ video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người
 - Quay lại toàn bộ dữ liệu bằng chân máy.
 - **2 camera chồng vùng nhìn** (XLA 2.11). Code vẫn thiết kế để chạy được tới 4 camera.
 - Mỗi cảnh có **4 người**.
-- **Cảnh cửa dùng bố trí "hành lang + cửa"** (QĐ-17): camera A ở đầu hành lang, camera B đối diện cửa. Hai camera được ghép bằng thời gian qua cửa (QĐ-18, [07_ghep_su_kien_cua.md](07_ghep_su_kien_cua.md)).
+- ~~Cảnh cửa dùng bố trí "hành lang + cửa"~~ (QĐ-17, QĐ-18): đã bỏ. Thay bằng QĐ-22: chỉ video hành lang, hai camera ở cùng một đầu.
 - **Viết lại tracker**, không sửa tiếp bản cũ.
 - Auto SIFT: làm **cả `sift_auto` lẫn ASIFT**, rồi so với SIFT thường.
 - Ưu tiên số 1 là **hiểu và bảo vệ được**.
@@ -177,7 +178,10 @@ Các bước của `median_running`:
 
 **Đầu ra:** `tracks.csv`, giữ đúng các cột cũ `frame,track_id,state,x,y,w,h,n_points`.
 
-### E. Đếm qua cửa (XLA 2.17, 3.5): bắt buộc
+### E. Đếm qua cửa: ĐÃ BỎ (QĐ-21, 2026-11-22)
+
+Nội dung dưới đây chỉ còn giá trị lịch sử; code nằm ở commit `827121c`.
+
 
 - Thầy yêu cầu phần này, nên dữ liệu quay phải có cảnh cửa.
 - Dùng **điểm chân** của track: `p = (cx, y + h)`.
@@ -284,7 +288,7 @@ src/
   optical_flow.py  LK + forward-backward + trung vị độ dịch
   assignment.py    Hungarian + gating (dùng chung cho D và G)
   tracker.py       máy trạng thái track
-  door.py          DoorCounter
+  tracklet_linking.py  nối các đoạn track bị đứt (thay cho door.py đã bỏ)
   features.py      crop chuẩn hóa, SIFT/ORB, histogram màu, gray-world
   gallery.py       chọn K crop tốt nhất cho mỗi track
   reid.py          ma trận tương đồng, homography, ghép
@@ -308,7 +312,7 @@ docs/              tài liệu này và tài liệu của từng module
 - Mỗi hộp có màu và texture khác biệt rõ.
 - **Thêm một cặp hộp cùng màu**, mô phỏng S4.
 - Một kịch bản người đứng yên (S3).
-- Một kịch bản qua cửa.
+- Một kịch bản nhóm đi sát nhau rồi tách ra (thay cho kịch bản qua cửa đã bỏ).
 
 ## 6. Cách làm việc để hiểu được code
 
@@ -339,7 +343,7 @@ Thứ tự ưu tiên theo XLA 4.4: C (bản tối thiểu) → D → F (chỉ SI
 | 1. Dữ liệu | Quay theo [ke_hoach_quay_video.md](ke_hoach_quay_video.md), chuyển sang frame rate cố định, click điểm homography, gán GT. Song song: làm video tổng hợp v2. | Đủ GT cho dev và test; `verify_gt` không còn cảnh báo |
 | 2. C | `background.py`, `detection.py`, ablation MOG2 | Đếm đúng số người ở ít nhất 80% số frame trên dev |
 | 3. D | `kalman.py`, `optical_flow.py`, `assignment.py`, `tracker.py`, MOTA/IDF1 | Test giao cắt với detection chuẩn: 0 lần đổi ID. Có số IDF1 trên dev. |
-| 4. E | `door.py` (bắt buộc) | Test IN 1 / OUT 1 đạt; khớp với số đếm tay trên video cửa |
+| 4. E | ~~`door.py`~~ đã bỏ (QĐ-21) | — |
 | 5. F + G | SIFT + màu + homography; làm chế độ oracle trước, end-to-end sau | Có kết quả `x/y` cặp đúng kèm mẫu số và ma trận tương đồng |
 | 6. H | ORB, `sift_auto` và ASIFT, ablation, đo tốc độ và RAM | Có bảng ablation và failure gallery |
 | 7. I | Báo cáo, demo, tập bảo vệ | Tự trả lời hết [hoi_dap_bao_ve.md](hoi_dap_bao_ve.md) |

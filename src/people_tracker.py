@@ -7,8 +7,11 @@ Mỗi frame, theo thứ tự:
 2. Phân loại detection (src/blob_analysis.py): gộp các mảnh tách, tìm blob gộp.
 3. Ghép lại các track vừa ra khỏi blob gộp (trong `recover_window_frames` frame sau khi tách)
    bằng nhiều tín hiệu (src/recovery.py), dùng Hungarian.
-4. Ghép các track còn lại với detection sạch: Hungarian trên 1 − IoU (src/assignment.py).
-5. Cập nhật trạng thái (src/track.py), rồi tạo track mới từ detection sạch còn thừa.
+4. Ghép các track còn lại với detection sạch: Hungarian trên 1 − IoU + w·(1 − độ giống màu)
+   (src/assignment.py). Màu giúp không tráo tên khi hai người ở sát nhau.
+5. Cập nhật trạng thái (src/track.py), rồi tạo track mới từ detection sạch còn thừa. Nếu có
+   mô hình chiều cao (src/height_model.py), detection quá thấp so với một người (chỉ là mảnh
+   đầu hoặc chân) không được tạo track mới (QĐ-27).
 Tracker cũ (src/tracker.py) được giữ lại để so sánh.
 """
 from __future__ import annotations
@@ -19,9 +22,11 @@ import cv2
 import numpy as np
 
 from src.assignment import assign, iou_cost
-from src.blob_analysis import coverage, find_merged, join_split_detections
+from src.blob_analysis import coverage, find_fragments, find_merged, join_split_detections
 from src.kalman import ConstantVelocityKalman
 from src.optical_flow import EMPTY, find_points, median_shift, track_points
+from src.color_features import color_similarity
+from src.height_model import HeightModel, tall_enough
 from src.recovery import colors_of, make_template, recovery_cost
 from src.track import Track
 from src.utils import iou
@@ -30,8 +35,9 @@ from src.utils import iou
 class PeopleTracker:
     """Giữ danh sách track của một camera và cập nhật chúng theo từng frame."""
 
-    def __init__(self, cfg: Mapping, kalman_cfg: Mapping, features_cfg: Mapping):
+    def __init__(self, cfg: Mapping, kalman_cfg: Mapping, features_cfg: Mapping, heights: HeightModel | None = None):
         self._cfg = cfg
+        self._heights = heights
         self._kalman_cfg = kalman_cfg
         self._features_cfg = features_cfg
         self.tracks: list[Track] = []
@@ -45,7 +51,10 @@ class PeopleTracker:
             self._predict(track, gray)
         predicted = {track.id: track.box for track in self.tracks}
         detections = join_split_detections([tuple(d) for d in detections], predicted, float(self._cfg["split_coverage"]))
-        merged_blobs = find_merged(detections, predicted, float(self._cfg["merge_coverage"]))
+        self._drop_fragments(detections, predicted)
+        sticky = {t.id for t in self.tracks if t.state == "merged"}
+        merged_blobs = find_merged(detections, predicted, float(self._cfg["merge_coverage"]),
+                                   sticky, float(self._cfg["merge_keep_coverage"]))
         merged_ids = set().union(*merged_blobs.values()) if merged_blobs else set()
         clean = [d for i, d in enumerate(detections) if i not in merged_blobs]
         matches = self._associate(clean, merged_ids, gray, frame_bgr)
@@ -56,6 +65,8 @@ class PeopleTracker:
                 self._on_match(track, clean[matches[track.id]], gray, frame_bgr, foreground)
             elif track.id in merged_ids and track.state != "tentative":
                 self._on_merged(track, merged_blobs, predicted)
+                if track.state == "merged" and self._cfg["template_search"]:
+                    self._locate_by_template(track, gray)
             else:
                 self._on_miss(track)
             if self._outside(track, gray.shape):
@@ -65,6 +76,14 @@ class PeopleTracker:
         finished = [t for t in self.tracks if t.state == "lost"]
         self.tracks = [t for t in self.tracks if t.state != "lost"]
         return self.tracks + finished
+
+    def _drop_fragments(self, detections: list, predicted: dict[int, tuple]) -> None:
+        """Bỏ track chỉ là mảnh (đầu hoặc chân) của một người đã có track, xem find_fragments."""
+        fragments = find_fragments(detections, predicted, float(self._cfg["merge_coverage"]),
+                                   float(self._cfg["fragment_max_vertical_overlap"]))
+        self.tracks = [t for t in self.tracks if t.id not in fragments]
+        for track_id in fragments:
+            del predicted[track_id]
 
     def _predict(self, track: Track, gray: np.ndarray) -> None:
         """Kalman dự đoán; nếu LK đo được độ dịch thì dùng làm phép đo nguồn "lk"."""
@@ -96,10 +115,42 @@ class PeopleTracker:
         normal = [t for t in self.tracks if t.id not in merged_ids and t.id not in matches]
         if normal and available:
             gate = float(cfg["iou_gate"])
+            weight = float(cfg["appearance_weight"])
             cost = iou_cost([t.box for t in normal], [clean[j] for j in available], gate)
-            for i, j in assign(cost, max_cost=1.0 - gate):
+            if weight > 0:
+                cost += weight * self._color_distance(normal, [clean[j] for j in available], frame_bgr)
+            for i, j in assign(cost, max_cost=1.0 - gate + weight):
                 matches[normal[i].id] = available[j]
         return matches
+
+    def _color_distance(self, tracks: list[Track], boxes: list, frame_bgr: np.ndarray) -> np.ndarray:
+        """Bảng 1 − độ giống màu giữa track và detection; track chưa có màu thì cho 0 (không phạt)."""
+        detection_colors = [colors_of(frame_bgr, box, self._features_cfg) for box in boxes]
+        table = np.zeros((len(tracks), len(boxes)))
+        for i, track in enumerate(tracks):
+            if track.colors is None or track.state == "tentative":
+                continue
+            for j, colors in enumerate(detection_colors):
+                table[i, j] = 1.0 - color_similarity(track.colors, colors)
+        return table
+
+    def _update_appearance(self, track: Track, gray: np.ndarray, frame_bgr: np.ndarray, box: Sequence[int]) -> None:
+        """Cập nhật ảnh mẫu và màu bằng trung bình trượt: mới = (1 − r)·cũ + r·hiện tại.
+
+        Cập nhật từ từ để một lần ghép nhầm không làm track "đổi danh tính" ngay lập tức.
+        """
+        rate = float(self._cfg["appearance_update_rate"])
+        template = make_template(gray, box)
+        colors = colors_of(frame_bgr, box, self._features_cfg)
+        if track.template is None or template is None or rate >= 1.0:
+            track.template = template if template is not None else track.template
+        else:
+            blended = (1 - rate) * track.template.astype(np.float32) + rate * template.astype(np.float32)
+            track.template = blended.astype(np.uint8)
+        if track.colors is None or colors is None or rate >= 1.0:
+            track.colors = colors if colors is not None else track.colors
+        else:
+            track.colors = {part: ((1 - rate) * track.colors[part] + rate * colors[part]).astype(np.float32) for part in colors}
 
     def _size_is_plausible(self, track: Track, box: Sequence[int]) -> bool:
         """Detection có đáng tin để lấy vị trí và kích thước không.
@@ -145,8 +196,7 @@ class PeopleTracker:
             track.state = "confirmed"
         if not plausible:
             return
-        track.template = make_template(gray, box)
-        track.colors = colors_of(frame_bgr, box, self._features_cfg)
+        self._update_appearance(track, gray, frame_bgr, box)
         if track.age % int(self._cfg["refresh_every"]) == 0 or len(track.points) < int(self._cfg["min_points"]):
             others = [t.box for t in self.tracks if t.id != track.id]
             track.points = find_points(gray, box, foreground, others, self._cfg)
@@ -168,6 +218,32 @@ class PeopleTracker:
         front_id = max(group, key=lambda tid: predicted[tid][1] + predicted[tid][3])
         if track.id != front_id:
             track.points = EMPTY
+
+    def _locate_by_template(self, track: Track, gray: np.ndarray) -> None:
+        """Trong blob gộp, tìm lại người bằng so khớp ảnh mẫu (NCC) quanh vị trí dự đoán.
+
+        Ảnh mẫu chụp lúc người còn đi riêng, phóng về đúng cỡ box hiện tại, rồi trượt trong vùng
+        box nới thêm `template_search_margin` × cỡ box. Chỗ có NCC cao nhất, nếu ≥ template_min_score,
+        được dùng làm một phép đo cho Kalman. Nhờ vậy vị trí của từng người không trôi dần trong
+        lúc dính nhau, và khi tách ra thì ít bị tráo tên hơn.
+        """
+        if track.template is None:
+            return
+        w, h = int(round(track.size[0])), int(round(track.size[1]))
+        if w < 8 or h < 16:
+            return
+        margin = float(self._cfg["template_search_margin"])
+        x, y, _, _ = track.box
+        left, top = max(0, int(x - margin * w)), max(0, int(y - margin * h))
+        right = min(gray.shape[1], int(x + w + margin * w))
+        bottom = min(gray.shape[0], int(y + h + margin * h))
+        if right - left <= w or bottom - top <= h:
+            return
+        template = cv2.resize(track.template, (w, h), interpolation=cv2.INTER_LINEAR)
+        scores = cv2.matchTemplate(gray[top:bottom, left:right], template, cv2.TM_CCOEFF_NORMED)
+        _, best, _, (dx, dy) = cv2.minMaxLoc(scores)
+        if np.isfinite(best) and best >= float(self._cfg["template_min_score"]):
+            track.kalman.correct(left + dx + w / 2.0, top + dy + h / 2.0, "lk")
 
     def _on_miss(self, track: Track) -> None:
         """Không có detection: track mới thì bỏ; LK cho thấy đứng yên thì sang static; còn lại tăng misses."""
@@ -204,6 +280,8 @@ class PeopleTracker:
         for index, box in enumerate(clean):
             if index in used or any(iou(box, other) >= limit for other in unmatched_boxes):
                 continue
+            if not self._may_start_track(box, gray.shape):
+                continue
             x, y, w, h = box
             center = (x + w / 2, y + h / 2)
             track = Track(self._next_id, ConstantVelocityKalman(*center, self._kalman_cfg), (float(w), float(h)), center)
@@ -213,6 +291,13 @@ class PeopleTracker:
             track.points = find_points(gray, box, foreground, [t.box for t in self.tracks], self._cfg)
             self.tracks.append(track)
             unmatched_boxes.append(track.box)
+
+    def _may_start_track(self, box: Sequence[int], shape: tuple[int, int]) -> bool:
+        """Detection có đủ cao để tạo track mới không; luôn đúng khi chưa có mô hình chiều cao."""
+        if self._heights is None:
+            return True
+        return tall_enough(box, self._heights, float(self._cfg["new_track_min_height_ratio"]), shape,
+                           float(self._cfg["new_track_border_px"]))
 
     @staticmethod
     def _outside(track: Track, shape: tuple[int, int]) -> bool:

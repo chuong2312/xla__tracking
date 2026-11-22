@@ -5,7 +5,8 @@ mặc cùng màu). Chi phí ghép track t với detection d gồm ba phần:
     chi phí = w_m · min(1, khoảng cách / đường chéo)       (liên tục chuyển động, theo Kalman)
             + w_t · (1 − NCC)                             (giống ảnh mẫu chụp trước khi gộp)
             + w_c · (1 − độ giống màu)                    (màu thân trên, thân dưới)
-Cặp có khoảng cách lớn hơn `recover_max_dist_ratio` × đường chéo thì bị cấm.
+Cặp bị cấm khi khoảng cách lớn hơn `recover_max_dist_ratio` × đường chéo, hoặc khi màu
+khác hẳn (độ giống < `recover_min_color_similarity`): áo vàng không được nhận khung áo đỏ.
 NCC (tương quan chéo chuẩn hóa) so hai ảnh xám cùng cỡ: 1 là giống hệt, 0 hoặc âm là không giống.
 """
 from __future__ import annotations
@@ -56,6 +57,8 @@ def recovery_cost(track: Track, box: Sequence[float], gray: np.ndarray, frame_bg
         return np.inf
     template_score = ncc(track.template, make_template(gray, box))
     color_score = color_similarity(track.colors, colors_of(frame_bgr, box, features_cfg))
+    if track.colors is not None and color_score < float(cfg["recover_min_color_similarity"]):
+        return np.inf
     return (float(cfg["recover_weight_motion"]) * min(1.0, distance)
             + float(cfg["recover_weight_template"]) * (1.0 - template_score)
             + float(cfg["recover_weight_color"]) * (1.0 - color_score))

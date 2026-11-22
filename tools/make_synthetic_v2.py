@@ -2,13 +2,13 @@
 
 Cách dùng (chạy từ thư mục gốc repo, bắt buộc có -m):
     python -m tools.make_synthetic_v2 --out data/synthetic_v2
-    python -m tools.make_synthetic_v2 --out data/synthetic_v2 --scenario s2 hanh_lang_cua --explain outputs/explain/video_tong_hop
+    python -m tools.make_synthetic_v2 --out data/synthetic_v2 --scenario s2 s5 --explain outputs/explain/video_tong_hop
 
 Mỗi kịch bản ghi vào <out>/<kịch bản>/:
 - cam_a/video.mp4, cam_b/video.mp4 và metadata.json của từng camera
 - cam_a/gt_tracking.csv, cam_b/gt_tracking.csv: đáp án từng camera (có occluded, keyframe)
-- gt_reid.csv: ai ở cam A là ai ở cam B; gt_events.csv: các lượt qua cửa
-- scene.json: homography sàn → ảnh, homography A → B, vạch cửa và điểm băng keo trong từng ảnh
+- gt_reid.csv: ai ở cam A là ai ở cam B
+- scene.json: homography sàn → ảnh, homography A → B, điểm băng keo trong từng ảnh
 """
 from __future__ import annotations
 
@@ -20,27 +20,21 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.door import signed_distance
 from src.homography import project
 from tools.annotate import write_gt
 from tools.synthetic_render import make_background, render_frame, visible_annotations
 from tools.synthetic_scenarios import SCENARIOS
 from tools.synthetic_scene import (
     CAMERAS, EMPTY_SECONDS, IMAGE_SIZE, Layout, Scenario,
-    door_events, floor_to_image, n_frames, person_box,
+    floor_to_image, n_frames, person_box,
 )
 
 
 def camera_geometry(layout: Layout, camera: str) -> dict:
     """Thông tin hình học của một camera, ghi vào scene.json."""
     H = floor_to_image(layout, camera)
-    door_line = project(H, list(layout.door_m)).ravel()
-    inside = project(H, [layout.door_inside_point_m])[0]
-    side = "positive" if signed_distance(door_line, inside) > 0 else "negative"
     return {
         "floor_to_image": H.tolist(),
-        "door_line": [round(float(v), 2) for v in door_line],
-        "door_inside_side": side,
         "tape_marks": np.round(project(H, layout.tape_marks_m), 2).tolist(),
     }
 
@@ -93,8 +87,6 @@ def generate(scenario: str, out: Path, fps: float = 30.0, seed: int = 0) -> Path
         ids_by_camera[camera] = {row[1] for row in rows}
     both = sorted(ids_by_camera["cam_a"] & ids_by_camera["cam_b"])
     write_csv(folder / "gt_reid.csv", ["person", "cam_a_id", "cam_b_id"], [(pid, pid, pid) for pid in both])
-    events = door_events(chosen, fps)
-    write_csv(folder / "gt_events.csv", ["frame", "gt_id", "direction"], events)
     geometry = {camera: camera_geometry(chosen.layout, camera) for camera in CAMERAS}
     H_a = np.asarray(geometry["cam_a"]["floor_to_image"])
     H_b = np.asarray(geometry["cam_b"]["floor_to_image"])
@@ -110,7 +102,7 @@ def generate(scenario: str, out: Path, fps: float = 30.0, seed: int = 0) -> Path
 
 
 def explain(folder: Path, out_png: Path) -> None:
-    """Ảnh minh họa: cam_a | cam_b ở 3 thời điểm, có box đáp án (màu theo mức che) và vạch cửa."""
+    """Ảnh minh họa: cam_a | cam_b ở 3 thời điểm, có box đáp án (màu theo mức che)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -130,8 +122,6 @@ def explain(folder: Path, out_png: Path) -> None:
             _, frame = capture.read()
             axis = axes[row_index][col]
             axis.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            x1, y1, x2, y2 = scene["cameras"][camera]["door_line"]
-            axis.plot([x1, x2], [y1, y2], color="saddlebrown", linewidth=2, label="vạch cửa")
             for row in rows:
                 if int(row["frame"]) != frame_index:
                     continue

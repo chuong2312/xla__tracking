@@ -22,19 +22,32 @@ Phương án mới nằm trong `docs/de_xuat_phuong_an.md`. Gặp từ khó thì
 | Homography mặt sàn | `docs/02_homography_san.md` | `python tools/calibrate_floor.py --cam-a … --cam-b … --out … --explain …` |
 | Ghép cặp Hungarian | `docs/03_ghep_cap_hungarian.md` | `python -m tools.explain_assignment` |
 | Kalman | `docs/04_kalman.md` | `python -m tools.explain_kalman` |
-| Đếm qua cửa | `docs/05_dem_qua_cua.md` | `python -m tools.explain_door` |
 | MOTA, MOTP, IDF1 | `docs/06_cham_diem_mota_idf1.md` | `python -m src.metrics track <tracks.csv> <gt.csv>` |
-| Ghép lượt qua cửa giữa 2 camera | `docs/07_ghep_su_kien_cua.md` | `python -m tools.explain_door_matching` |
 | Đặc trưng ngoại hình (SIFT/ORB/ASIFT, màu) | `docs/08_dac_trung_ngoai_hinh.md` | xem module 09 |
 | Nhận dạng lại giữa 2 camera | `docs/09_nhan_dang_lai.md` | `python -m tools.run_reid --scene data/synthetic_v2/s4` và `python -m tools.explain_reid` |
+| Tìm người (mô hình chiều cao, gộp mảnh) | `docs/10_tim_nguoi.md` | `python -m tools.explain_height_model --video data/real/4p-c1.mp4 --frame 1800` |
+| Homography sàn từ hiệu chỉnh EPFL | `docs/02_homography_san.md` | `python -m tools.epfl_homography --calib data/real/epfl_4p_c0_c1/calibration-4p.txt --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1 --explain outputs/explain/homography_epfl.png` |
 
-**Chạy cả hệ thống** (tìm người → bám người → đếm cửa → nhận dạng lại giữa 2 camera → chấm điểm):
+**Chạy cả hệ thống** (tìm người → bám người → nối track bị đứt → nhận dạng lại giữa 2 camera → chấm điểm):
 
 ```bash
-python run.py --scene data/synthetic_v2/hanh_lang_cua --debug-video
+python run.py --scene data/synthetic_v2/s2 --debug-video
 ```
 
-Giải thích chi tiết ở `docs/10_tim_nguoi.md`, `docs/11_tracker_moi.md` và `docs/12_he_thong.md`.
+Giải thích chi tiết ở `docs/10_tim_nguoi.md`, `docs/11_tracker_moi.md`, `docs/12_he_thong.md` và `docs/13_noi_tracklet.md`.
+
+**Video thật EPFL** (4 người, 2 camera; nguồn và bản quyền ở `data/real/epfl_4p_c0_c1/nguon.txt`):
+
+```bash
+python run.py --scene data/real/epfl_4p_c0_c1 --debug-video   # khoảng 2 phút
+```
+
+**Tự chỉnh tham số:** đọc `docs/14_hieu_chinh_tham_so.md`, sửa `config.yaml`, rồi chấm lại bằng
+
+```bash
+python -m tools.hieu_chinh                                            # chấm config hiện tại
+python -m tools.hieu_chinh --set "people_tracker.max_misses=[5, 10]"   # thử nhiều giá trị
+```
 
 Chạy test bằng `python -m pytest`. Phải có `python -m`: lệnh `pytest` trơn không tìm thấy thư mục `src`.
 

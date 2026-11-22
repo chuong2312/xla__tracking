@@ -30,7 +30,7 @@ def _floor_polygon(H: np.ndarray, corners_m) -> np.ndarray:
 
 
 def make_background(layout: Layout, H: np.ndarray, rng: np.random.Generator) -> np.ndarray:
-    """Ảnh nền cố định của một camera: tường có đồ vật, sàn kẻ ô, băng keo, cửa.
+    """Ảnh nền cố định của một camera: tường có đồ vật, sàn kẻ ô, băng keo.
 
     Đồ vật và đường kẻ tạo góc cạnh trên nền, giống cảnh thật, để thử xem thuật toán
     có lấy nhầm điểm nền hay không.
@@ -46,8 +46,6 @@ def make_background(layout: Layout, H: np.ndarray, rng: np.random.Generator) -> 
         cv2.rectangle(image, (x, y), (x + w, y + h), (40, 40, 40), 2)
     x_min, y_min, x_max, y_max = layout.floor_rect_m
     cv2.fillPoly(image, [_floor_polygon(H, rect_corners(layout.floor_rect_m))], (150, 175, 190))
-    if layout.room_rect_m is not None:
-        cv2.fillPoly(image, [_floor_polygon(H, rect_corners(layout.room_rect_m))], (70, 80, 90))
     for x in np.arange(x_min, x_max + 0.01, 1.0):
         cv2.polylines(image, [_floor_polygon(H, [(x, y_min), (x, y_max)])], False, (120, 140, 150), 1)
     for y in np.arange(y_min, y_max + 0.01, 1.0):
@@ -55,7 +53,6 @@ def make_background(layout: Layout, H: np.ndarray, rng: np.random.Generator) -> 
     for mx, my in layout.tape_marks_m:
         square = [(mx - 0.08, my - 0.08), (mx + 0.08, my - 0.08), (mx + 0.08, my + 0.08), (mx - 0.08, my + 0.08)]
         cv2.fillPoly(image, [_floor_polygon(H, square)], (0, 140, 255))
-    cv2.polylines(image, [_floor_polygon(H, list(layout.door_m))], False, (30, 60, 110), 3)
     return image
 
 

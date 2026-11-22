@@ -1,7 +1,8 @@
 # Tìm video thật trên mạng để thử chương trình
 
+> **Cập nhật 2026-11-22:** chỉ cần video hành lang nhiều người đi lại; không cần cảnh cửa nữa (QĐ-21).
 > **Mục đích:** có thêm video thật với nhiều điều kiện hành lang khác nhau, ngoài video nhóm tự quay ([ke_hoach_quay_video.md](ke_hoach_quay_video.md)).
-> **Nhớ:** video trên mạng chỉ để **thử thêm**. Video nhóm tự quay mới đủ điều kiện cho toàn bộ đề tài: 2 camera chồng vùng nhìn, đồng bộ, có cửa, biết rõ ai là ai.
+> **Nhớ:** video trên mạng chỉ để **thử thêm**. Video nhóm tự quay mới đủ điều kiện cho toàn bộ đề tài: 2 camera chồng vùng nhìn, đồng bộ, biết rõ ai là ai.
 
 ## 1. Điều kiện bắt buộc: thiếu một điều là không dùng được
 
@@ -12,7 +13,7 @@ Chương trình tìm người bằng cách so mỗi ảnh với ảnh nền. Vì
 | **Camera đứng yên tuyệt đối**: không cầm tay, không lia, không zoom, không rung | Camera nhúc nhích thì cả ảnh khác nền, chương trình thấy "chuyển động" ở khắp nơi (đúng lỗi của video S1 cũ) |
 | **Không cắt cảnh** trong đoạn dùng để thử | Mỗi lần chuyển cảnh, ảnh nền đổi hoàn toàn |
 | Dài ít nhất **15–30 giây liên tục** | Cần thời gian để có ảnh nền, và để người đi qua hết khung |
-| Thấy **toàn thân người**, kể cả chân | Đếm cửa và homography dùng điểm chân |
+| Thấy **toàn thân người**, kể cả chân | Homography mặt sàn dùng điểm chân |
 | Người cao ít nhất khoảng **1/4 chiều cao khung** | Người quá nhỏ thì không đủ chi tiết |
 | Camera đặt **cao, nhìn chéo xuống**, kiểu camera an ninh | Ít bị che hơn nhìn ngang, và thấy được sàn |
 | Độ phân giải từ **480p** trở lên | Ảnh quá mờ thì không bám được |
@@ -53,9 +54,6 @@ Mỗi video ghi lại nó thuộc ô nào trong bảng dưới. Mục tiêu là 
 | | Mặc giống nhau (đồng phục học sinh, áo blouse bệnh viện) | Không phân biệt được bằng màu áo |
 | | Mang đồ: balo, xe đẩy, vali | Khung bị to ra, điểm chân bị lệch |
 | | Đông người (giờ tan học, giờ cao điểm) | Thử giới hạn của chương trình |
-| **Cửa** | Người đi vào/ra một cửa trong khung hình | Đếm VÀO/RA (thầy bắt buộc) |
-| | Cửa tự động hoặc cửa đóng mở liên tục | Cánh cửa chuyển động bị tưởng là người |
-| | 2 người qua cửa cùng lúc, ngược chiều | Trường hợp khó của bộ đếm |
 | **Góc quay** | Nhìn dọc hành lang (người đi về phía camera) | Người to dần lên, dễ che nhau |
 | | Nhìn ngang hành lang (người đi ngang qua) | Ít che nhau, dễ hơn |
 | | Nhìn gần như thẳng từ trên xuống | Người trông rất khác bình thường, chân khó xác định |
@@ -81,7 +79,6 @@ Tìm theo tên trên Google. Đây là các bộ dữ liệu quen thuộc trong 
 - `office corridor surveillance video`
 - `school hallway CCTV footage`
 - `hospital corridor security camera`
-- `people entering door CCTV footage`
 - `CCTV night infrared corridor`
 - `crowded corridor surveillance footage`
 
@@ -90,11 +87,10 @@ Thêm `stock footage` hoặc `free` để ra kho video miễn phí.
 **Tiếng Việt:**
 - `camera an ninh hành lang`
 - `camera giám sát hành lang trường học`
-- `clip camera an ninh người đi qua cửa`
 - `camera an ninh ban đêm hành lang`
 
 **Câu hỏi mẫu nếu nhờ trợ lý AI tìm giúp:**
-> "Tìm cho tôi các video quay bằng camera an ninh cố định ở hành lang trong nhà: camera không di chuyển, không cắt cảnh, dài ít nhất 20 giây, thấy toàn thân người đi lại, có người đi qua cửa. Ưu tiên nguồn có giấy phép dùng miễn phí hoặc bộ dữ liệu nghiên cứu có sẵn đáp án khung người."
+> "Tìm cho tôi các video quay bằng camera an ninh cố định ở hành lang trong nhà: camera không di chuyển, không cắt cảnh, dài ít nhất 20 giây, thấy toàn thân người đi lại. Ưu tiên nguồn có giấy phép dùng miễn phí hoặc bộ dữ liệu nghiên cứu có sẵn đáp án khung người."
 
 ## 6. Sau khi tải về
 

@@ -12,7 +12,7 @@
 | 3 | Auto SIFT | Được dùng | Thầy không nói rõ là nghĩa nào, nên làm cả `sift_auto` lẫn ASIFT và so với SIFT thường (QĐ-14) |
 | 4 | Dùng thư viện có sẵn | Được dùng | Dùng hàm của OpenCV/SciPy; tự đặt tham số và giải thích được bên trong (QĐ-11) |
 | 5 | Kalman | Được dùng | Dùng `cv2.KalmanFilter` trong tracker mới (QĐ-05) |
-| 6 | Đếm người IN/OUT | **Bắt buộc** | Phần E là bắt buộc, phải quay cảnh cửa (QĐ-12) |
+| 6 | Đếm người IN/OUT | **Bắt buộc** | Ngày 2026-11-22 nhóm quyết định **bỏ** phần này (QĐ-21). Như vậy là trái yêu cầu của thầy, nên cần trao đổi lại với thầy. Code cũ còn trong commit `827121c` |
 | 7 | Số camera, số người | Tối đa 4 camera cố định | Nhóm chọn 2 camera, 4 người (QĐ-13). Thầy không nói gì về số người. |
 | 8 | Homography mặt sàn | Được dùng | Chỉ dùng làm thông tin hình học **bổ trợ**; kết quả chỉ dùng ngoại hình được báo cáo riêng (QĐ-02) |
 

@@ -8,7 +8,7 @@
 
 1. Chương trình xem video và **tìm chỗ có người** (bước C).
 2. Chương trình **bám theo từng người** qua các tấm ảnh, giữ cho mỗi người một cái tên riêng (bước D).
-3. Chương trình **đếm** ai đi vào, ai đi ra cửa (bước E).
+3. Chương trình **nối lại** những đoạn bám bị đứt của cùng một người.
 4. Chương trình **nhận ra cùng một người** ở camera 1 và camera 2 (bước F, G). Sau đó nhóm **chấm điểm** chương trình bằng đáp án tự làm bằng tay (bước H).
 
 ## 1. Ảnh và video
@@ -49,6 +49,11 @@
 | **box** (khung) | Khung chữ nhật bao quanh một người. Được ghi bằng 4 số `(x, y, w, h)`: `x, y` là vị trí góc trên bên trái, `w` là chiều rộng, `h` là chiều cao. |
 | **detection** (một lần phát hiện) | Một khung tìm được trong một tấm ảnh. Lúc này chưa biết đó là ai. |
 | **detector** | Phần chương trình làm bước tìm người (bước C). |
+| **mảnh người** (fragment) | Một phần của người bị tách riêng, ví dụ chỉ có đầu hoặc chỉ có chân, vì áo trùng màu nền nên phần thân "biến mất" trong mask. |
+| **track trùng** (duplicate track) | Một người mà có hai track, tức hai tên, cùng lúc. Thường do một mảnh của người đó (đầu hoặc chân) bị coi là người mới. |
+| **mô hình chiều cao** (height model) | Đường thẳng cho biết người đứng ở vị trí chân y thì cao khoảng bao nhiêu pixel: `cao = a·y + b`. Camera nhìn từ trên xuống nên người càng gần thì chân càng thấp trong ảnh và người càng cao. |
+| **phân vị 90%** (percentile) | Xếp các số từ nhỏ đến lớn, lấy số đứng ở vị trí 90%. Ví dụ 100 chiều cao thì lấy số thứ 90. Mảnh người thấp nằm ở nửa dưới, nên phân vị 90% gần với chiều cao người nguyên vẹn. |
+| **Theil–Sen** | Cách kẻ một đường thẳng qua một đám điểm mà không bị một vài điểm lạ kéo lệch: tính độ dốc của mọi cặp điểm rồi lấy **trung vị**. Đây là toán thống kê, không phải học máy. |
 | **HOG + SVM** | Một cách tìm người bằng mô hình học máy đã huấn luyện sẵn. **Bị cấm** trong đồ án, sẽ xóa khỏi code. |
 
 ## 3. Bám người (bước D)
@@ -78,15 +83,6 @@
 | **template / NCC** (so ảnh mẫu) | Lưu một ảnh nhỏ của người ngay trước khi bị che. Khi hai người tách ra, tìm chỗ giống ảnh đó nhất để biết ai là ai. |
 | **histogram màu** | Bảng đếm xem mỗi màu xuất hiện bao nhiêu lần, tức là "phân bố màu quần áo". |
 | **Bhattacharyya, tương quan histogram** | Hai cách đo xem hai histogram giống nhau đến mức nào. |
-
-## 4. Đếm qua cửa (bước E)
-
-| Từ | Nghĩa dễ hiểu |
-|---|---|
-| **điểm chân** | Điểm giữa cạnh dưới của khung, tức chỗ chân chạm sàn. |
-| **vạch cửa** (door line) | Đoạn thẳng vẽ ngang lối đi qua cửa, ở trên ảnh. |
-| **vùng đệm** (hysteresis) | Một dải hẹp ở hai bên vạch cửa. Người phải đi qua hẳn dải này mới được tính một lượt, nên người đứng ngay trên vạch không bị đếm nhiều lần. |
-| **IN / OUT, sự kiện** (event) | Một lượt đi vào hoặc đi ra, được ghi vào file `events.csv`. |
 
 ## 5. Đặc trưng ngoại hình (bước F)
 
@@ -160,7 +156,7 @@
 | Từ | Nghĩa dễ hiểu |
 |---|---|
 | **OpenCV, NumPy, SciPy** | Ba thư viện Python: OpenCV để xử lý ảnh, NumPy để tính toán trên mảng số, SciPy cho toán khoa học (có sẵn hàm Hungarian). |
-| **pipeline** (dây chuyền) | Chuỗi các bước nối tiếp nhau: tìm người → bám người → đếm qua cửa → nhận dạng lại → chấm điểm. |
+| **pipeline** (dây chuyền) | Chuỗi các bước nối tiếp nhau: tìm người → bám người → nối track bị đứt → nhận dạng lại → chấm điểm. |
 | **module** | Một phần của chương trình chuyên làm một việc, thường là một file trong thư mục `src/`. |
 | **config.yaml** | File chứa tất cả các "nút vặn" (ngưỡng, kích thước…). Muốn đổi thông số thì sửa số trong file này, không cần sửa code. |
 | **CSV** | File bảng dạng chữ, mỗi dòng là một bản ghi. Ví dụ: `detections.csv` (các khung tìm được), `tracks.csv` (vị trí từng người), `gt_tracking.csv` (đáp án). |
@@ -171,7 +167,7 @@
 | Từ | Nghĩa dễ hiểu |
 |---|---|
 | **video tổng hợp** | Video giả do máy tự vẽ: hình chữ nhật có hoa văn đóng vai người. Máy biết sẵn đáp án nên không cần gán nhãn tay. |
-| **kịch bản** (`s1`, `s2`, `s3`, `s4`, `door`) | Mỗi kịch bản là một cách đi lại của 4 người, dùng để thử một tình huống: đi riêng, cắt nhau, đứng yên, mặc giống nhau, qua cửa. |
+| **kịch bản** (`s1`–`s5`) | Mỗi kịch bản là một cách đi lại của 4 người, dùng để thử một tình huống: đi thưa, cắt nhau, đứng yên, mặc giống nhau, đi thành nhóm. |
 | **mốc, quỹ đạo** | Quỹ đạo là đường đi của một người. Mốc là các điểm "giây thứ mấy, đứng ở đâu"; giữa hai mốc người đi thẳng đều. |
 | **seed** | Con số khởi đầu cho phần ngẫu nhiên. Cùng seed thì máy vẽ ra y hệt nhau, nên kết quả kiểm tra lặp lại được. |
 | **bản đồ ai ở pixel nào** (label map) | Bảng cùng kích thước ảnh, mỗi ô ghi mã người đang hiện ở pixel đó. Dùng để biết phần nhìn thấy của từng người khi bị che. |
@@ -180,12 +176,9 @@
 | **sai số chiếu lại** | Khoảng cách (pixel) giữa điểm chiếu từ camera A sang và điểm thật ở camera B. Càng nhỏ thì homography càng chuẩn. |
 | **chi phí cấm** (`FORBIDDEN_COST`) | Số rất lớn (một triệu) gán cho cặp không được ghép, rồi bị loại sau khi ghép. |
 | **hệ số tin K** (Kalman gain) | Trong Kalman: tin phép đo bao nhiêu so với dự đoán, nằm giữa 0 (bỏ qua phép đo) và 1 (tin hoàn toàn). |
-| **test hồi quy** | Test giữ lại mãi để chắc chắn lần sửa code sau không làm hỏng điều đã đúng, ví dụ test "IN 1 / OUT 1" của bộ đếm cửa. |
+| **test hồi quy** | Test giữ lại mãi để chắc chắn lần sửa code sau không làm hỏng điều đã đúng, ví dụ test "hai người đi qua nhau vẫn giữ đúng tên" của tracker. |
 | **CLEAR MOT** | Tên bộ quy tắc chuẩn để chấm MOTA và MOTP. |
 | **IDTP / IDFP / IDFN** | Khi chấm IDF1: số box mang đúng tên / số box của chương trình mang sai tên / số box trong đáp án không được gọi đúng tên. |
-| **bố trí hành lang + cửa** | Camera A ở đầu hành lang nhìn dọc hành lang; camera B gắn đối diện cửa nhìn thẳng vào cửa. Hai camera chỉ cùng thấy vùng quanh cửa ("chồng vùng nhìn một phần"). |
-| **ghép lượt qua cửa theo thời gian** | Lượt VÀO ở camera A và lượt VÀO ở camera B xảy ra gần như cùng lúc thì coi là cùng một người. |
-| **độ lệch thời gian cho phép** (`door_event_max_gap_s`) | Hai lượt cùng chiều lệch nhau quá bấy nhiêu giây thì không được ghép. |
 | **frame_offset** | Số frame chênh lệch giữa hai video do bấm quay không cùng lúc; tìm bằng tiếng vỗ tay, rồi cộng vào để hai video cùng một mốc giờ. |
 | **mức đủ** (`feature_saturation_matches`) | Số cặp keypoint khớp tốt mà từ đó trở lên coi là chắc chắn (điểm keypoint = 1). |
 | **điểm gộp / điểm tổng** | Trung bình có trọng số của điểm keypoint, điểm màu và điểm vị trí sàn. |
@@ -195,3 +188,7 @@
 | **bỏ phiếu đa số** | Khi chấm điểm: mỗi track được gắn với người trong đáp án mà nó khớp nhiều tấm ảnh nhất. |
 | **track chính** | Nếu một người bị tách thành nhiều track, track khớp với người đó lâu nhất là track chính. |
 | **end-to-end** (chạy trọn) | Chạy cả hệ thống thật: lỗi của bước trước cộng dồn sang bước sau. Ngược với oracle (dùng khung đáp án). |
+| **bố trí hành lang hai góc** | Hai camera đặt ở cùng một đầu hành lang, một ở góc trái, một ở góc phải, cùng nhìn dọc vào trong (QĐ-22). |
+| **nối tracklet** | Sau khi bám người xong, nối các đoạn track bị đứt của cùng một người: đoạn sau bắt đầu sau đoạn trước, ở gần chỗ đoán theo vận tốc, và cùng màu áo. |
+| **ngưỡng có độ trễ** (hysteresis) | Dùng hai ngưỡng khác nhau cho "vào" và "ra", để trạng thái không chập chờn khi giá trị dao động quanh một ngưỡng. Ví dụ: vào cụm gộp cần 60%, ở lại chỉ cần 30%. |
+| **tráo tên** (ID switch) | Hai người bị đổi tên cho nhau, hoặc một người bị gán tên của người khác. |

@@ -21,7 +21,7 @@ import numpy as np
 
 from src.assignment import assign
 from src.color_features import apply_gains, body_histograms, color_similarity, mean_histograms
-from src.door import foot_point
+from src.utils import foot_point
 from src.gallery import Observation, select_gallery
 from src.keypoint_features import CropFeatures, extract, normalize_crop
 from src.reid_similarity import combine, geometry_similarity, keypoint_similarity
