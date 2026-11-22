@@ -1,12 +1,12 @@
-"""Kiểm thử nối các đoạn track bị đứt (src/tracklet_linking.py)."""
+"""Kiểm thử nối các đoạn track bị đứt (src/tracking/tracklet_linking.py)."""
 import sys
 from pathlib import Path
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.color_features import body_histograms
-from src.tracklet_linking import link_tracklets, relabel, segments_from_rows
+from src.reid.color_features import body_histograms
+from src.tracking.tracklet_linking import link_tracklets, relabel, segments_from_rows
 
 CFG = {"max_gap_frames": 120, "velocity_frames": 5, "max_dist_ratio": 3.0, "min_color_similarity": 0.5,
        "weight_motion": 0.5, "weight_color": 0.5, "max_cost": 1.0}

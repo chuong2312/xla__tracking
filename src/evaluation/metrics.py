@@ -9,7 +9,7 @@ import yaml
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 # Trạng thái track được chấm điểm: confirmed (tracker cũ và mới), merged và static (chỉ tracker mới có).
 SCORED_TRACK_STATES = {"confirmed", "merged", "static"}
 
@@ -237,7 +237,7 @@ def main() -> None:
     args=parser.parse_args()
     if args.command=="det": _print_table("Detection metrics",detection_pr(args.detections,args.gt,args.iou_thr))
     elif args.command=="track":
-        from src.mot_metrics import mot_metrics
+        from src.evaluation.mot_metrics import mot_metrics
         _print_table("Tracking metrics",tracking_metrics(args.tracks,args.gt,args.iou_thr))
         _print_table("MOT metrics (MOTA, MOTP, IDF1)",mot_metrics(args.tracks,args.gt,args.iou_thr))
     else:

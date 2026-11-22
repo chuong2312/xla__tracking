@@ -4,15 +4,15 @@ Mỗi frame, theo thứ tự:
 1. Dự đoán: Kalman predict. Nếu Lucas-Kanade đo được độ dịch (đủ điểm tin cậy), vị trí theo
    LK được dùng làm một phép đo cho Kalman. Khi hai người dính nhau, chỉ người đứng trước
    giữ điểm LK; người đứng sau bỏ điểm để không bị "hút" sang người kia (XLA 2.5).
-2. Phân loại detection (src/blob_analysis.py): gộp các mảnh tách, tìm blob gộp.
+2. Phân loại detection (src/tracking/blob_analysis.py): gộp các mảnh tách, tìm blob gộp.
 3. Ghép lại các track vừa ra khỏi blob gộp (trong `recover_window_frames` frame sau khi tách)
-   bằng nhiều tín hiệu (src/recovery.py), dùng Hungarian.
+   bằng nhiều tín hiệu (src/tracking/recovery.py), dùng Hungarian.
 4. Ghép các track còn lại với detection sạch: Hungarian trên 1 − IoU + w·(1 − độ giống màu)
-   (src/assignment.py). Màu giúp không tráo tên khi hai người ở sát nhau.
-5. Cập nhật trạng thái (src/track.py), rồi tạo track mới từ detection sạch còn thừa. Nếu có
-   mô hình chiều cao (src/height_model.py), detection quá thấp so với một người (chỉ là mảnh
+   (src/common/assignment.py). Màu giúp không tráo tên khi hai người ở sát nhau.
+5. Cập nhật trạng thái (src/tracking/track.py), rồi tạo track mới từ detection sạch còn thừa. Nếu có
+   mô hình chiều cao (src/detect/height_model.py), detection quá thấp so với một người (chỉ là mảnh
    đầu hoặc chân) không được tạo track mới (QĐ-27).
-Tracker cũ (src/tracker.py) được giữ lại để so sánh.
+Tracker cũ (legacy/tracker.py) được giữ lại để so sánh.
 """
 from __future__ import annotations
 
@@ -21,15 +21,15 @@ from collections.abc import Mapping, Sequence
 import cv2
 import numpy as np
 
-from src.assignment import assign, iou_cost
-from src.blob_analysis import coverage, find_fragments, find_merged, join_split_detections
-from src.kalman import ConstantVelocityKalman
-from src.optical_flow import EMPTY, find_points, median_shift, track_points
-from src.color_features import color_similarity
-from src.height_model import HeightModel, tall_enough
-from src.recovery import colors_of, make_template, recovery_cost
-from src.track import Track
-from src.utils import iou
+from src.common.assignment import assign, iou_cost
+from src.tracking.blob_analysis import coverage, find_fragments, find_merged, join_split_detections
+from src.common.kalman import ConstantVelocityKalman
+from src.tracking.optical_flow import EMPTY, find_points, median_shift, track_points
+from src.reid.color_features import color_similarity
+from src.detect.height_model import HeightModel, tall_enough
+from src.tracking.recovery import colors_of, make_template, recovery_cost
+from src.tracking.track import Track
+from src.common.utils import iou
 
 
 class PeopleTracker:

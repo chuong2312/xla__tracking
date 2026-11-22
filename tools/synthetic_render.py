@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import cv2
 
-from src.homography import project
+from src.common.homography import project
 from tools.synthetic_scene import IMAGE_SIZE, Layout, Person, rect_corners
 
 NOISE_STD = 2.0

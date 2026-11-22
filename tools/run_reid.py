@@ -20,10 +20,10 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from src.color_features import gray_world_gains
-from src.gallery import Observation
-from src.metrics import rank1, reid_metrics
-from src.reid import VARIANTS, assign_global_ids, describe_tracks, read_frames, similarity_tables
+from src.reid.color_features import gray_world_gains
+from src.reid.gallery import Observation
+from src.evaluation.metrics import rank1, reid_metrics
+from src.reid.reid import VARIANTS, assign_global_ids, describe_tracks, read_frames, similarity_tables
 from tools.verify_gt import read_gt
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

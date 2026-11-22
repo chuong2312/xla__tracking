@@ -18,7 +18,7 @@ from collections.abc import Sequence
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from src.utils import iou_matrix
+from src.common.utils import iou_matrix
 
 FORBIDDEN_COST = 1e6
 

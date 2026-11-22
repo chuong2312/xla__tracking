@@ -7,7 +7,7 @@ Có ba loại điểm, mỗi loại trong khoảng 0–1:
    - ràng buộc dọc (XLA 2.8): |y_A / H_A − y_B / H_B| < vertical_tolerance, tức đầu khớp với đầu.
    Có thể bật thêm RANSAC để so sánh (QĐ-06). Lấy số cặp khớp n lớn nhất trên các cặp crop:
        điểm = 0 nếu n < min_matches, ngược lại min(1, n / feature_saturation_matches)
-2. Màu: xem src/color_features.py.
+2. Màu: xem src/reid/color_features.py.
 3. Vị trí sàn (`geometry_similarity`): ở các frame mà cả hai camera cùng thấy, chiếu điểm chân
    ở A sang ảnh B bằng homography H_AB, đo khoảng cách d tới điểm chân ở B:
        điểm = trung bình exp(−d² / 2σ²)
@@ -21,8 +21,8 @@ from collections.abc import Mapping, Sequence
 import cv2
 import numpy as np
 
-from src.homography import project
-from src.keypoint_features import CropFeatures, norm_type
+from src.common.homography import project
+from src.reid.keypoint_features import CropFeatures, norm_type
 
 
 def good_matches(features_a: CropFeatures, features_b: CropFeatures, matcher, cfg: Mapping) -> list:

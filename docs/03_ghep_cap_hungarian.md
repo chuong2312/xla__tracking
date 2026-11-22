@@ -1,6 +1,6 @@
 # 03. Ghép cặp bằng Hungarian
 
-> Code: `src/assignment.py`. Ảnh minh họa: `python -m tools.explain_assignment`.
+> Code: `src/common/assignment.py`. Ảnh minh họa: `python -m tools.explain_assignment`.
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán

@@ -2,7 +2,7 @@ import csv
 from pathlib import Path
 import cv2
 from tools.make_synthetic import generate
-from src.utils import iter_video
+from src.common.utils import iter_video
 
 def test_synthetic_outputs(tmp_path: Path):
     generate("cross",5,(160,120),0,tmp_path)

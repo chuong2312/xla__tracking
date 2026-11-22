@@ -1,4 +1,4 @@
-"""Kiểm thử Kalman vận tốc hằng (src/kalman.py)."""
+"""Kiểm thử Kalman vận tốc hằng (src/common/kalman.py)."""
 import sys
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.kalman import ConstantVelocityKalman
+from src.common.kalman import ConstantVelocityKalman
 
 CFG = {"acceleration_std_px": 0.5, "detection_noise_px": 4.0, "lk_noise_px": 3.0, "initial_velocity_std_px": 5.0}
 

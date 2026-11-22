@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from src.homography import project
+from src.common.homography import project
 
 IMAGE_SIZE = (640, 360)
 EMPTY_SECONDS = 2.0

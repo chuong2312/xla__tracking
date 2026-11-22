@@ -16,8 +16,8 @@ from collections.abc import Mapping, Sequence
 import cv2
 import numpy as np
 
-from src.color_features import body_histograms, color_similarity
-from src.track import Track
+from src.reid.color_features import body_histograms, color_similarity
+from src.tracking.track import Track
 
 TEMPLATE_SIZE = (24, 48)
 

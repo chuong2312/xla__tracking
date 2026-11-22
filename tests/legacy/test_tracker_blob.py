@@ -1,15 +1,15 @@
 """Kiểm thử blob và phục hồi appearance trên frame BGR tổng hợp."""
 import sys
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 import cv2
 import numpy as np
 import pytest
 from scipy.optimize import linear_sum_assignment
-from src.config import load_config
-from src.metrics import default_iou_threshold
-from src.tracker import Tracker, _box_overlap_metrics
-from src.utils import iou
+from legacy.config import load_config
+from src.evaluation.metrics import default_iou_threshold
+from legacy.tracker import Tracker, _box_overlap_metrics
+from src.common.utils import iou
 
 BOXES=[(10,20,20,24),(30,20,20,24)]
 COLORS=[(0,0,230),(0,220,0)]
@@ -274,9 +274,9 @@ def test_tentative_track_does_not_receive_blob_grace_or_recovery(caplog):
     tentative.occluded=True; tentative.blob_grace_age=4
     confirmed.state="confirmed"; confirmed.occluded=True
     set_static_predictions(tracker)
-    with caplog.at_level(logging.INFO,logger="src.tracker"):
+    with caplog.at_level(logging.INFO,logger="legacy.tracker"):
         result=tracker.update(gray,[BOXES[1]],frame_bgr=frame)
-    events=[json.loads(record.getMessage()) for record in caplog.records if record.name=="src.tracker"]
+    events=[json.loads(record.getMessage()) for record in caplog.records if record.name=="legacy.tracker"]
     recovery=next(event for event in events if event["event"]=="recovery_matrix")
     tentative_after=next(track for track in result if track.id==tentative.id)
     confirmed_after=next(track for track in result if track.id==confirmed.id)
@@ -479,7 +479,7 @@ CONTROL_Y = 48
 
 def controlled_cfg():
     """Đọc nguyên ngưỡng tracking hiện có, không nới cấu hình cho test."""
-    return load_config(Path(__file__).resolve().parents[1] / "config.yaml")
+    return load_config(Path(__file__).resolve().parents[2] / "config.yaml")
 
 
 def stable_textures() -> dict[int, np.ndarray]:

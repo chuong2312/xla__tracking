@@ -16,7 +16,7 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from src.metrics import _load_boxes, _match_boxes, default_iou_threshold
+from src.evaluation.metrics import _load_boxes, _match_boxes, default_iou_threshold
 
 
 def map_tracks_to_gt(tracks_csv: str | Path, gt_csv: str | Path, iou_thr: float | None = None) -> tuple[dict[int, int], dict[int, int]]:

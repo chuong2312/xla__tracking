@@ -4,10 +4,10 @@ import csv
 from pathlib import Path
 import cv2
 import yaml
-from src.config import load_config
-from src.detector import Detector
-from src.tracker import Tracker
-from src.utils import iter_video
+from legacy.config import load_config
+from legacy.detector import Detector
+from legacy.tracker import Tracker
+from src.common.utils import iter_video
 
 def main() -> None:
     """Đọc từng frame một lần, phát hiện, theo dõi và xuất overlay tùy chọn."""

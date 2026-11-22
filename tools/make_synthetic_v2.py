@@ -20,7 +20,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.homography import project
+from src.common.homography import project
 from tools.annotate import write_gt
 from tools.synthetic_render import make_background, render_frame, visible_annotations
 from tools.synthetic_scenarios import SCENARIOS

@@ -1,7 +1,7 @@
 # 12. Toàn bộ hệ thống: `run.py`
 
-> Code: `run.py` (lệnh chạy), `src/pipeline.py` (một camera), `src/tracklet_linking.py` (nối track bị đứt),
-> `src/system_eval.py` (chấm điểm toàn hệ thống). Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
+> Code: `run.py` (lệnh chạy), `src/pipeline.py` (một camera), `src/tracking/tracklet_linking.py` (nối track bị đứt),
+> `src/evaluation/system_eval.py` (chấm điểm toàn hệ thống). Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Chạy
 
@@ -15,9 +15,9 @@ Lệnh này chạy trên thư mục cảnh có `cam_a/video.mp4` và `cam_b/vide
 
 ```
 Mỗi camera:  video → [C] tìm người → [D] bám người, giữ tên       (src/pipeline.py)
-                   → nối các đoạn track bị đứt của cùng một người  (src/tracklet_linking.py)
-Hai camera:  [F] mô tả ngoại hình mỗi track → [G] ghép người A ↔ B  (src/reid.py)
-Chấm điểm:   nếu có đáp án (src/system_eval.py)
+                   → nối các đoạn track bị đứt của cùng một người  (src/tracking/tracklet_linking.py)
+Hai camera:  [F] mô tả ngoại hình mỗi track → [G] ghép người A ↔ B  (src/reid/reid.py)
+Chấm điểm:   nếu có đáp án (src/evaluation/system_eval.py)
 ```
 
 Phần đếm VÀO/RA qua cửa đã bị bỏ (QĐ-21).

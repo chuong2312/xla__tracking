@@ -4,13 +4,13 @@ import logging
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import cv2
 import numpy as np
 import pytest
 
-from src.tracker import Tracker
+from legacy.tracker import Tracker
 from tools.trace_tracking import collect_provenance_files, sha256_file
 
 
@@ -47,10 +47,10 @@ def test_update_logs_prediction_hungarian_and_recovery_evidence(caplog):
     merged = _frame([merged_box], [(120, 120, 120)])
     tracker.update(cv2.cvtColor(merged, cv2.COLOR_BGR2GRAY), [merged_box], frame_bgr=merged)
 
-    with caplog.at_level(logging.INFO, logger="src.tracker"):
+    with caplog.at_level(logging.INFO, logger="legacy.tracker"):
         tracker.update(cv2.cvtColor(clean, cv2.COLOR_BGR2GRAY), boxes, frame_bgr=clean)
 
-    events = [json.loads(record.getMessage()) for record in caplog.records if record.name == "src.tracker"]
+    events = [json.loads(record.getMessage()) for record in caplog.records if record.name == "legacy.tracker"]
     prediction = next(event for event in events if event["event"] == "prediction")
     assignment = next(event for event in events if event["event"] == "association_matrix")
     recovery = next(event for event in events if event["event"] == "recovery_matrix")
@@ -69,16 +69,16 @@ def test_update_logs_prediction_hungarian_and_recovery_evidence(caplog):
 
 def test_run_manifest_hashes_untracked_tests_and_synthetic_inputs():
     """Manifest enumerates working-tree source/tests and actual synthetic inputs."""
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     video = root / "data/synthetic/cross/cam_a/video.mp4"
     gt = root / "data/synthetic/cross/gt_tracking.csv"
     config = root / "config.yaml"
     records = collect_provenance_files(root, config, video, gt)
     paths = {record["relative_path"] for record in records}
 
-    assert "src/tracker.py" in paths
-    assert "tests/test_tracker_blob.py" in paths
-    assert "tests/test_tracker_diagnostics.py" in paths
+    assert "legacy/tracker.py" in paths
+    assert "tests/legacy/test_tracker_blob.py" in paths
+    assert "tests/legacy/test_tracker_diagnostics.py" in paths
     assert "config.yaml" in paths
     assert "tools/make_synthetic.py" in paths
     assert "data/synthetic/cross/cam_a/video.mp4" in paths
@@ -102,12 +102,12 @@ def test_stale_track_false_positive_assignment_is_visible_in_trace(caplog):
 
     moved = _frame([new_box], [(0, 0, 230)])
     tracker.update(cv2.cvtColor(moved, cv2.COLOR_BGR2GRAY), [], frame_bgr=moved)
-    with caplog.at_level(logging.INFO, logger="src.tracker"):
+    with caplog.at_level(logging.INFO, logger="legacy.tracker"):
         result = tracker.update(
             cv2.cvtColor(moved, cv2.COLOR_BGR2GRAY), [old_box, new_box], frame_bgr=moved,
         )
 
-    events = [json.loads(record.getMessage()) for record in caplog.records if record.name == "src.tracker"]
+    events = [json.loads(record.getMessage()) for record in caplog.records if record.name == "legacy.tracker"]
     matrix = next(event for event in events if event["event"] == "association_matrix")
     assignment = next(event for event in events if event["event"] == "normal_assignment_result")
     assert matrix["track_boxes"] == [list(old_box)]

@@ -1,6 +1,6 @@
 # 13. Nối các đoạn track bị đứt (tracklet linking)
 
-> Code: `src/tracklet_linking.py`. Chạy tự động trong `run.py`. Tham số ở section `tracklet_linking` của `config.yaml`.
+> Code: `src/tracking/tracklet_linking.py`. Chạy tự động trong `run.py`. Tham số ở section `tracklet_linking` của `config.yaml`.
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán

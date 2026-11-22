@@ -1,7 +1,7 @@
 """Test đọc file hiệu chỉnh EPFL và tính homography sàn A → B."""
 import numpy as np
 
-from src.homography import project
+from src.common.homography import project
 from tools.epfl_homography import floor_to_floor, read_ground_homographies
 
 CALIB = """# Camera 0

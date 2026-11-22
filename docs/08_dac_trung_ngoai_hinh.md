@@ -1,6 +1,6 @@
 # 08. Đặc trưng ngoại hình (bước F)
 
-> Code: `src/gallery.py` (chọn ảnh mẫu), `src/keypoint_features.py` (keypoint), `src/color_features.py` (màu).
+> Code: `src/reid/gallery.py` (chọn ảnh mẫu), `src/reid/keypoint_features.py` (keypoint), `src/reid/color_features.py` (màu).
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán

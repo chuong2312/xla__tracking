@@ -3,7 +3,7 @@ import argparse, csv, json
 from pathlib import Path
 import cv2
 import numpy as np
-from src.utils import set_seed
+from src.common.utils import set_seed
 
 def generate(scenario: str, frames: int, size: tuple[int,int], seed: int, out: Path, write_gt_reid: bool=False) -> None:
     """Tạo hai video tổng hợp, metadata và nhãn hộp theo từng frame."""

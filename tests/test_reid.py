@@ -1,4 +1,4 @@
-"""Kiểm thử đặc trưng ngoại hình và nhận dạng lại (src/color_features.py, keypoint_features.py,
+"""Kiểm thử đặc trưng ngoại hình và nhận dạng lại (src/reid/color_features.py, keypoint_features.py,
 gallery.py, reid_similarity.py, reid.py) và chạy oracle trên video tổng hợp v2."""
 import csv
 import sys
@@ -10,11 +10,11 @@ import pytest
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.color_features import apply_gains, body_histograms, color_similarity, gray_world_gains, mean_histograms
-from src.gallery import Observation, select_gallery
-from src.keypoint_features import extract, normalize_crop
-from src.reid import assign_global_ids
-from src.reid_similarity import combine, geometry_similarity, keypoint_similarity
+from src.reid.color_features import apply_gains, body_histograms, color_similarity, gray_world_gains, mean_histograms
+from src.reid.gallery import Observation, select_gallery
+from src.reid.keypoint_features import extract, normalize_crop
+from src.reid.reid import assign_global_ids
+from src.reid.reid_similarity import combine, geometry_similarity, keypoint_similarity
 from tools.make_synthetic_v2 import generate
 from tools.run_reid import run
 

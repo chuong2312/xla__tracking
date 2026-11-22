@@ -1,11 +1,11 @@
 """Test detector bằng frame tổng hợp tạo từ NumPy."""
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import cv2
 import numpy as np
 import pytest
-from src.detector import Detector
+from legacy.detector import Detector
 
 def make_config(**updates):
     detector = {"blur_kernel": 1, "history": 30, "varThreshold": 16.0, "learningRate": 0.001,

@@ -1,6 +1,6 @@
 # 10. Tìm người trong ảnh (bước C)
 
-> Code: `src/background.py` (mô hình nền), `src/detection.py` (tìm box). Tham số ở section `detection` của `config.yaml`.
+> Code: `src/detect/background.py` (mô hình nền), `src/detect/detection.py` (tìm box). Tham số ở section `detection` của `config.yaml`.
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán
@@ -17,7 +17,7 @@
    - opening để xóa chấm nhiễu;
    - closing với kernel **dựng đứng 3×9**, để nối thân với chân mà ít nối hai người đứng cạnh nhau.
 6. **Gom cụm** (connected components). Mỗi cụm là một **mảnh**.
-7. **Gộp mảnh của cùng một người** (QĐ-26). Người mặc áo trùng màu nền bị đứt thành đầu và chân. Trước khi chạy, hệ thống tự ước lượng **chiều cao người mong đợi theo vị trí chân** từ các frame đầu (`src/height_model.py`). Hai mảnh xếp trên – dưới chỉ được gộp khi box gộp **không cao hơn một người**. Hai người đứng trước – sau gộp lại thì cao hơn hẳn, nên không bị gộp nhầm.
+7. **Gộp mảnh của cùng một người** (QĐ-26). Người mặc áo trùng màu nền bị đứt thành đầu và chân. Trước khi chạy, hệ thống tự ước lượng **chiều cao người mong đợi theo vị trí chân** từ các frame đầu (`src/detect/height_model.py`). Hai mảnh xếp trên – dưới chỉ được gộp khi box gộp **không cao hơn một người**. Hai người đứng trước – sau gộp lại thì cao hơn hẳn, nên không bị gộp nhầm.
 8. Lọc theo diện tích và tỉ lệ cao/rộng của người.
 9. **Cập nhật nền có chọn lọc:** sau khi tracker chạy xong, nền chỉ được cập nhật ở những chỗ **không có người đang theo dõi**. Nhờ vậy người đứng yên không bị "nuốt" vào nền.
 
@@ -27,7 +27,7 @@
 - Bóng: `0,5 ≤ V_I / V_B ≤ 0,95`, `|S_I − S_B| ≤ 40` và `|H_I − H_B| ≤ 10`.
 - Cập nhật nền: `B ← (1 − a)·B + a·I`, chỉ ở pixel không thuộc người. a = `update_rate`.
 - Chiều cao mong đợi: `h(y) = a·y + b`, kẻ qua phân vị 90% chiều cao box trong từng khoảng 25 px của y_chân, bằng Theil–Sen: `a = trung vị((h_j − h_i)/(y_j − y_i))`, `b = trung vị(h_i − a·y_i)`.
-- Minh họa: `python -m tools.explain_height_model --video data/real/4p-c1.mp4 --frame 1800` (ghi `outputs/explain/chieu_cao/`).
+- Minh họa: `python -m tools.explain_height_model --video data/real/epfl/4p-c1.mp4 --frame 1800` (ghi `outputs/explain/chieu_cao/`).
 - Gộp hai mảnh khi: thẳng hàng dọc (chung ≥ 50% bề rộng), khoảng hở ≤ 1 × chiều cao mảnh cao hơn, và `cao_gộp ≤ 1,15 · h(y_chân_gộp)`.
 
 ## Kết quả trên video tổng hợp (precision / recall)

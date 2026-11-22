@@ -1,4 +1,4 @@
-"""Kiểm thử ghép cặp Hungarian dùng chung (src/assignment.py)."""
+"""Kiểm thử ghép cặp Hungarian dùng chung (src/common/assignment.py)."""
 import sys
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.assignment import FORBIDDEN_COST, assign, iou_cost
+from src.common.assignment import FORBIDDEN_COST, assign, iou_cost
 
 
 def test_empty_matrix_gives_no_pairs():

@@ -1,10 +1,10 @@
 """Nhận dạng lại giữa hai camera (bước G): mô tả từng track, tính ma trận giống nhau, gán ID toàn cục.
 
 Chuỗi xử lý:
-1. Với mỗi track: chọn gallery (src/gallery.py), cắt crop chuẩn, chuẩn hóa màu theo
+1. Với mỗi track: chọn gallery (src/reid/gallery.py), cắt crop chuẩn, chuẩn hóa màu theo
    camera (gray-world), trích keypoint và histogram màu (bước F).
 2. Với mọi cặp (track ở A, track ở B): tính điểm keypoint, màu, vị trí sàn
-   (src/reid_similarity.py), rồi gộp thành hai bảng:
+   (src/reid/reid_similarity.py), rồi gộp thành hai bảng:
    - "ngoai_hinh": chỉ dùng keypoint + màu;
    - "ngoai_hinh_san": thêm vị trí sàn.
    Hai bảng được báo cáo RIÊNG, để thấy phần nhận dạng bằng đặc trưng ảnh làm được đến đâu (QĐ-02).
@@ -19,12 +19,12 @@ from dataclasses import dataclass, field
 import cv2
 import numpy as np
 
-from src.assignment import assign
-from src.color_features import apply_gains, body_histograms, color_similarity, mean_histograms
-from src.utils import foot_point
-from src.gallery import Observation, select_gallery
-from src.keypoint_features import CropFeatures, extract, normalize_crop
-from src.reid_similarity import combine, geometry_similarity, keypoint_similarity
+from src.common.assignment import assign
+from src.reid.color_features import apply_gains, body_histograms, color_similarity, mean_histograms
+from src.common.utils import foot_point
+from src.reid.gallery import Observation, select_gallery
+from src.reid.keypoint_features import CropFeatures, extract, normalize_crop
+from src.reid.reid_similarity import combine, geometry_similarity, keypoint_similarity
 
 VARIANTS = ("ngoai_hinh", "ngoai_hinh_san")
 
