@@ -56,8 +56,9 @@ IDF1 hay số người ghép đúng; chỉ đếm được (`outputs/he_thong/<c
 | `epfl_lab4p_c0_c1` | A / B | 3,15 / 3,38 | 3,24 / 3,19 | 95 → 42 / 81 → 26 | 1904 / 1523 frame |
 | `epfl_lab4p_c2_c3` | A / B | 3,01 / 2,97 | 3,17 / 3,00 | 111 → 56 / 156 → 75 | 1438 / 1551 frame |
 
-Ghép người giữa hai camera (ngoại hình + vị trí sàn): 20 cặp ở c0 + c1, 21 cặp ở c2 + c3. Chưa có đáp án nên
-chưa biết cặp nào đúng.
+Ghép người giữa hai camera: chưa có đáp án, nên được soát bằng vị trí chân trên bản đồ sàn EPFL (QĐ-35). Kết quả
+hiện tại cho thấy ghép bằng ngoại hình gần như ngẫu nhiên: ở c0 + c1, trong 5 cặp kiểm được thì cả 5 cặp đều lệch.
+Xem bảng trong [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md) (QĐ-35).
 
 **Đọc kết quả thế nào:**
 - Cảnh có tối đa 4 người mà mỗi camera vẫn có 26–75 tên. Một người bị tách thành nhiều đoạn track: khi đi qua

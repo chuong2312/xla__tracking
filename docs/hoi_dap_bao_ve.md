@@ -186,6 +186,21 @@ Hiện kiểm tra được những thứ không cần đáp án:
 Muốn có MOTA, IDF1 thì nhóm phải tự khoanh đáp án ở các frame mốc bằng `tools/annotate.py`. Đó là việc của người,
 không để máy làm.
 
+**Chưa có `gt_reid.csv` thì sao biết ghép người giữa hai camera đúng hay sai?** (QĐ-35)
+Dùng hình học camera do EPFL đo. Cùng một người ở cùng một lúc thì chân ở hai camera phải rơi vào cùng một chỗ trên
+bản đồ sàn. Hai track được ghép mà chân cách nhau hơn khoảng 0,75 m (trung vị trên các frame cả hai cùng có mặt) thì
+gần như chắc chắn là ghép nhầm. Cách này chỉ chấm khách quan được biến thể "chỉ ngoại hình". Biến thể có vị trí sàn đã
+dùng chính thông tin đó để ghép, nên dùng nó để chấm thì giống tự chấm bài của mình.
+
+**Bản đồ sàn EPFL tính bằng đơn vị gì? Sao biết 40 đơn vị khoảng 0,75 m?** (QĐ-35)
+File EPFL không ghi đơn vị, nên nhóm tự suy ra bằng hai cách độc lập:
+- Từ hai mặt phẳng (sàn, và đầu cao 1,75 m) của camera 0 và 1, dựng lại ma trận camera. Thang đo đúng là thang đo làm
+  tiêu cự ngang bằng tiêu cự dọc. Kết quả: 1,8–1,9 cm một đơn vị.
+- Bề rộng người đo trên sàn có trung vị khoảng 30 đơn vị, tức khoảng 0,55 m. Con số này hợp với người thật.
+
+**Vì sao các ngưỡng của bài chấm không nằm trong config?** (QĐ-34, QĐ-35)
+Đó là định nghĩa của thước đo, giống ngưỡng IoU 0,5 của MOTA. Để trong config thì ai cũng chỉnh được thước đo cho đẹp số.
+
 **Vì sao homography cần ít nhất 4 điểm?** ([02](02_homography_san.md))
 H là ma trận 3×3 nhưng chỉ có 8 ẩn, vì nhân H với cùng một số thì kết quả chiếu không đổi. Mỗi cặp điểm cho 2 phương trình, nên cần 4 cặp. Có nhiều hơn 4 cặp thì dùng RANSAC để loại cặp bị click nhầm.
 

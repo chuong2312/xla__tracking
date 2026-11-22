@@ -15,6 +15,8 @@ Cách dùng:
   ĐIỂM = (MOTA + IDF1) / 2, càng cao càng tốt.
 - Cảnh CHƯA có đáp án: in bài chấm không cần đáp án (QĐ-34, src/evaluation/khong_dap_an.py) cho từng camera:
   số ID (ít là tốt), phủ người (cao là tốt), track ma (thấp là tốt), cú nhảy (thấp là tốt), track mỗi frame.
+  Cảnh có hiệu chỉnh camera thì in thêm kiểm tra ghép hai camera bằng vị trí sàn (QĐ-35) cho từng biến thể:
+  số cặp khớp (nhiều là tốt), lệch (ít là tốt), và số "cặp hình học" được ghép đúng.
 Kết quả ghi vào outputs/hieu_chinh/<thời gian>/bang_diem.csv, kèm config của từng lượt.
 """
 from __future__ import annotations
@@ -33,7 +35,7 @@ from pathlib import Path
 import yaml
 
 from src.common.utils import camera_video
-from tools.cham_khong_dap_an import score_scene
+from tools.cham_khong_dap_an import score_cross_camera, score_scene
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENE_ROOT = ROOT / "data/canh"
@@ -113,12 +115,15 @@ def scored_metrics(run_dir: Path, scenes_with_answers: list[Path]) -> dict:
 
 
 def no_answer_scores(run_dir: Path, scene_list: list[Path]) -> dict:
-    """Bài chấm không cần đáp án (QĐ-34) của từng camera: số ID, phủ người, track ma, cú nhảy."""
+    """Bài chấm không cần đáp án (QĐ-34) của từng camera, và kiểm tra ghép hai camera (QĐ-35) của từng cảnh."""
     result = {}
     for scene in scene_list:
         for camera, values in score_scene(run_dir / scene.name, scene).items():
             result[f"{scene.name}/{camera}"] = (f"{values['so_id']} ID, phủ {values['phu_nguoi']:.2f}, ma {values['track_ma']:.2f}, "
                                                 f"nhảy {values['nhay']}, {values['track_moi_frame']} track/frame")
+        for variant, values in score_cross_camera(run_dir / scene.name, scene).items():
+            result[f"{scene.name}/{variant}"] = (f"khớp {values['khop']}, lệch {values['lech']}, không kiểm được {values['khong_kiem_duoc']}, "
+                                                 f"bắt {values['bat_duoc']}/{values['cap_hinh_hoc']} cặp hình học")
     return result
 
 

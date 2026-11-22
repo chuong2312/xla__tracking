@@ -433,3 +433,34 @@
   |---|---|---|---|---|
   | c0+c1 A / B | 36 / 16 | 0,91 / 0,93 | 0,03 / 0,02 | 4 / 5 |
   | c2+c3 A / B | 55 / 81 | 0,89 / 0,87 | 0,05 / 0,07 | 3 / 3 |
+
+## QĐ-35: Kiểm tra ghép hai camera bằng vị trí sàn
+- **Trạng thái:** đã làm (2026-11-23), `src/evaluation/khop_hai_camera.py`. `tools/cham_khong_dap_an.py` và `tools/hieu_chinh.py` in kết quả cho cảnh có `camera.json`.
+- **Vấn đề:** bài chấm QĐ-34 chỉ chấm từng camera. Bước ghép người giữa hai camera (bước G) chưa được kiểm tra gì, vì chưa có `gt_reid.csv`.
+- **Quyết định:** cùng một người ở cùng một frame thì điểm chân ở hai camera phải rơi vào cùng một chỗ trên bản đồ sàn EPFL. Với mỗi cặp track được gán cùng global_id, lấy trung vị d của khoảng cách giữa hai điểm chân trên bản đồ sàn, ở các frame cả hai cùng có mặt. Chỉ tính frame mà track ở trạng thái confirmed hoặc static, và chân không bị cắt ở mép ảnh. Mỗi cặp được xếp loại:
+  - **khớp:** có ít nhất 10 frame chung và d ≤ 40 đơn vị (khoảng 0,75 m);
+  - **lệch:** có ít nhất 10 frame chung và d > 40, gần như chắc chắn ghép nhầm;
+  - **không kiểm được:** quá ít frame chung.
+
+  Đếm thêm **cặp hình học**: cặp track có ít nhất 25 frame chung (1 giây) với d ≤ 40, tức gần như chắc chắn cùng một người. Sau đó xem có bao nhiêu cặp hình học được gán cùng global_id.
+- **Thang đo:** file EPFL không ghi đơn vị. Nhóm suy ra hai cách, cho kết quả khớp nhau:
+  - dựng lại ma trận camera từ hai mặt phẳng (sàn, và đầu cao 1,75 m) của camera 0 và 1, rồi chọn thang đo sao cho tiêu cự ngang bằng tiêu cự dọc: 1,8–1,9 cm một đơn vị;
+  - bề rộng người đo trên sàn có trung vị khoảng 30 đơn vị, tức khoảng 0,55 m, hợp với người thật.
+- **Giới hạn:**
+  - Kiểm tra này chỉ độc lập với biến thể `ngoai_hinh`. Biến thể `ngoai_hinh_san` đã dùng chính vị trí sàn để ghép, nên nó được điểm cao hơn là đương nhiên.
+  - Đây là kiểm tra chéo bằng hình học camera do EPFL đo, không phải đáp án.
+  - Các ngưỡng là định nghĩa của thước đo, nên để cố định trong code, không đưa vào config.
+- **Mốc** (`outputs/hieu_chinh/00_moc_khoi_dong_nhanh/`):
+
+  | Cảnh | Biến thể | Ghép | Khớp | Lệch | Không kiểm được | Cặp hình học được ghép |
+  |---|---|---|---|---|---|---|
+  | c0+c1 | ngoai_hinh | 14 | 0 | 5 | 9 | 0 / 15 |
+  | c0+c1 | ngoai_hinh_san | 15 | 3 | 2 | 10 | 3 / 15 |
+  | c2+c3 | ngoai_hinh | 21 | 3 | 5 | 13 | 2 / 27 |
+  | c2+c3 | ngoai_hinh_san | 22 | 6 | 2 | 14 | 4 / 27 |
+
+  Hiện ghép bằng ngoại hình gần như ngẫu nhiên, vì hai lý do:
+  - một người bị tách thành nhiều track, mà mỗi track chỉ được ghép với đúng một track ở camera kia;
+  - ở ảnh 360×288, keypoint và màu áo phân biệt người kém.
+
+  Đây là việc của vòng cải thiện sau.

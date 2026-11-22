@@ -31,6 +31,12 @@ ghép đúng giữa hai camera. Trong lúc chờ, hệ thống được kiểm t
 Các con số này nằm trong test tự động (`tests/test_that_*.py`, `tests/test_reid.py`). Khung người dùng trong test
 được chọn bằng mắt trên frame thật (`tests/du_lieu_that.py`).
 
+Khi cải thiện hệ thống, mỗi lần chạy được chấm bằng `python -m tools.cham_khong_dap_an` (hoặc `tools/hieu_chinh.py`):
+- **từng camera (QĐ-34):** số tên, độ phủ người, track ma, cú nhảy;
+- **ghép hai camera (QĐ-35):** chân của hai track được gán cùng tên, đổi ra bản đồ sàn bằng hiệu chỉnh EPFL, phải
+  cách nhau không quá khoảng 0,75 m. Nhờ vậy biết được cặp nào **lệch**, tức chắc chắn ghép nhầm. Kiểm tra này chỉ
+  khách quan với biến thể chỉ dùng ngoại hình, vì biến thể kia đã dùng chính vị trí sàn để ghép.
+
 ## Muốn có điểm thật: nhóm tự khoanh đáp án
 
 ```bash
@@ -56,5 +62,5 @@ Chỉ cần khoanh khoảng 1–2 phút video, tức 300–600 frame mốc mỗi
 - *"Video lấy ở đâu?"* Bộ "Multi-camera pedestrians video" của EPFL (phòng thí nghiệm, 4 người, 4 camera), nhóm
   đưa vào dự án. Chỉ dùng cho nghiên cứu; báo cáo trích dẫn bài báo của EPFL (`data/goc/epfl_lab4p/nguon.txt`).
 - *"Chưa có đáp án thì sao biết hệ thống đúng?"* Hiện chỉ kiểm tra được những thứ không cần đáp án: khung đúng cỡ
-  người theo hiệu chỉnh camera, số tên thừa, màu áo. Muốn có MOTA, IDF1 thì nhóm phải khoanh đáp án bằng
+  người theo hiệu chỉnh camera, số tên thừa, màu áo, và vị trí sàn của hai track được ghép giữa hai camera. Muốn có MOTA, IDF1 thì nhóm phải khoanh đáp án bằng
   `tools/annotate.py`. Đó là việc của người, không để máy làm.

@@ -139,6 +139,9 @@
 | **IDF1** | Điểm cho việc **giữ đúng tên** của mỗi người suốt cả video. |
 | **rank-1** | Với mỗi người ở camera A, xem người giống nhất ở camera B có đúng là họ không. |
 | **x/y cặp đúng** | Ví dụ 3/4 nghĩa là ghép đúng 3 trong 4 người. Luôn ghi rõ mẫu số. |
+| **kiểm tra chéo** (cross-check) | Khi chưa có đáp án, dùng một nguồn thông tin khác, độc lập, để soát kết quả. Ví dụ: ghép người giữa hai camera bằng ngoại hình, rồi soát lại bằng vị trí chân trên bản đồ sàn (QĐ-35). |
+| **cặp hình học** | Một track ở camera A và một track ở camera B mà chân của chúng trùng chỗ trên bản đồ sàn (cách nhau không quá khoảng 0,75 m) trong ít nhất 1 giây. Gần như chắc chắn là cùng một người. |
+| **khớp / lệch / không kiểm được** | Ba loại của một cặp đã ghép giữa hai camera (QĐ-35). Khớp: chân hai bên trùng chỗ trên sàn. Lệch: chân cách xa nhau, tức ghép nhầm. Không kiểm được: hai track hầu như không xuất hiện cùng lúc. |
 | **oracle** (chạy với đáp án) | Cho một bước dùng khung trong đáp án thay vì khung tự tìm. Nhờ vậy đo được riêng năng lực của bước sau, không bị lỗi của bước trước ảnh hưởng. |
 | **end-to-end** (từ đầu đến cuối) | Chạy toàn bộ chương trình thật. Lỗi của bước trước cộng dồn sang bước sau. |
 | **ablation** (thí nghiệm so sánh) | Tắt hoặc thay một bộ phận để xem bộ phận đó giúp được bao nhiêu. Ví dụ: so MOG2 với trung vị, so SIFT với ASIFT. |

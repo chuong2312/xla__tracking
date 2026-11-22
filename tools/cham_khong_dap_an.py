@@ -6,7 +6,8 @@ Cách dùng:
 
 In và ghi `khong_dap_an.json` vào thư mục kết quả: so_id, track_moi_frame, phu_nguoi, track_ma, nhay, cao_hop_ly
 cho từng camera. Nếu cảnh có `camera.json` (do tools/epfl_homography.py ghi: file hiệu chỉnh và số camera) thì
-dùng hiệu chỉnh để biết khung nào cao đúng cỡ người.
+dùng hiệu chỉnh để biết khung nào cao đúng cỡ người, và kiểm tra luôn bước ghép người giữa hai camera bằng vị
+trí trên sàn (src/evaluation/khop_hai_camera.py, QĐ-35): số cặp khớp, lệch, không kiểm được của từng biến thể.
 """
 from __future__ import annotations
 
@@ -16,6 +17,8 @@ from pathlib import Path
 
 from src.common.utils import camera_video, video_size
 from src.evaluation.khong_dap_an import scorecard
+from src.evaluation.khop_hai_camera import cross_camera_check
+from src.reid.reid import VARIANTS
 from tools.epfl_homography import read_calibration
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +46,18 @@ def score_scene(run_dir: Path, scene: Path) -> dict:
     return result
 
 
+def score_cross_camera(run_dir: Path, scene: Path) -> dict:
+    """Kiểm tra ghép hai camera bằng vị trí sàn (QĐ-35); {} nếu cảnh thiếu hiệu chỉnh hoặc thiếu kết quả một camera."""
+    calibrations = camera_calibrations(scene)
+    if any(calibrations.get(camera) is None for camera in CAMERAS):
+        return {}
+    if not all((run_dir / camera / "tracks_linked.csv").exists() for camera in CAMERAS):
+        return {}
+    grounds = {camera: calibrations[camera]["ground"] for camera in CAMERAS}
+    heights = {camera: video_size(camera_video(scene / camera))[1] for camera in CAMERAS}
+    return cross_camera_check(run_dir, grounds, heights, VARIANTS)
+
+
 def main() -> None:
     """Chấm một thư mục kết quả và ghi khong_dap_an.json."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -50,9 +65,14 @@ def main() -> None:
     parser.add_argument("--scene", type=Path, required=True, help="thư mục cảnh, ví dụ data/canh/<cảnh>")
     args = parser.parse_args()
     result = score_scene(args.run, args.scene)
-    (args.run / "khong_dap_an.json").write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     for camera, values in result.items():
         print(camera, "  ".join(f"{k}={v}" for k, v in values.items()))
+    cross = score_cross_camera(args.run, args.scene)
+    for variant, values in cross.items():
+        print(f"hai_camera/{variant}", "  ".join(f"{k}={v}" for k, v in values.items()))
+    if cross:
+        result["hai_camera"] = cross
+    (args.run / "khong_dap_an.json").write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 if __name__ == "__main__":
