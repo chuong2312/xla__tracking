@@ -5,6 +5,7 @@ scene:
   annotate_step: 5
   roi: null
   ignore_regions: []
+  # Không còn dùng (QĐ-21); giữ lại vì src/config.py của code cũ bắt buộc phải có.
   door_line: [320, 0, 320, 480]
 detector:
   # Learning rate thấp giúp hạn chế MOG2 hấp thụ người đứng yên.
@@ -22,7 +23,127 @@ detector:
   max_area: 100000
   min_ratio: 1.2
   max_ratio: 5.0
-  use_hog_baseline: false
+detection:
+  # Bước C của hệ thống mới (src/detection.py). Section `detector` ở trên là của detector cũ.
+  # Mô hình nền: median_running (trung vị + cập nhật có chọn lọc) hoặc mog2 (QĐ-03).
+  # Chọn MOG2 theo dữ liệu thật EPFL (QĐ-25): trừ nền trung vị coi ~15% ảnh là foreground (nhấp nháy, nhiễu nén), MOG2 chỉ ~5%.
+  background: mog2
+  # median_running: bù độ sáng toàn ảnh trước khi so với nền (thử trên EPFL: 15,5% → 14,8%, gần như không giúp).
+  exposure_compensation: false
+  # Số frame đầu (cảnh trống) để lấy trung vị làm ảnh nền: 30 frame = 1 giây ở 30 fps.
+  init_frames: 30
+  # Pixel khác nền hơn bấy nhiêu (độ dài vector chênh lệch 3 kênh màu, thang 0–441) thì là foreground.
+  diff_threshold: 30
+  # Tốc độ cập nhật nền a ở vùng không có người: B ← (1 − a)·B + a·I.
+  update_rate: 0.02
+  # Nới box người thêm bấy nhiêu pixel mỗi phía khi loại khỏi cập nhật nền.
+  exclude_margin_px: 10
+  # Khử bóng (HSV): độ sáng còn v_min–v_max lần nền, lệch bão hòa ≤ s_max, lệch màu ≤ h_max (thang H 0–180).
+  shadow_v_min: 0.5
+  shadow_v_max: 0.95
+  shadow_s_max: 40
+  shadow_h_max: 10
+  # Tham số của MOG2 khi background: mog2.
+  mog2_history: 500
+  mog2_var_threshold: 16.0
+  # Tốc độ MOG2 "quên" nền cũ, mỗi frame (0–1). Nền cần khoảng 1/rate frame để theo kịp thay đổi:
+  # 0,001 ≈ 1000 frame ≈ 40 giây ở 25 fps. Nhanh quá thì người đứng yên bị nuốt vào nền (QĐ-28).
+  mog2_learning_rate: 0.001
+  # Morphology: opening xóa chấm nhiễu; closing kernel dựng đứng [rộng, cao] nối thân với chân.
+  open_kernel: [3, 3]
+  open_iterations: 1
+  close_kernel: [3, 9]
+  close_iterations: 2
+  # Bỏ các mảnh foreground nhỏ hơn bấy nhiêu pixel trước khi gộp mảnh.
+  min_piece_area: 40
+  # Gộp hai mảnh thẳng hàng theo chiều dọc nếu khoảng hở ≤ tỉ lệ này × chiều cao mảnh cao hơn (0 = chỉ gộp khi chạm nhau).
+  # Chỉ gộp khi đã có mô hình chiều cao (height_model bên dưới) và box gộp không cao quá
+  # group_max_height_ratio × chiều cao người mong đợi ở vị trí chân đó (QĐ-26).
+  group_max_gap_ratio: 1.0
+  group_max_height_ratio: 1.15
+  # Mô hình chiều cao người theo vị trí chân, tự ước lượng từ các frame đầu của video (src/height_model.py).
+  height_model:
+    enabled: true
+    frames: 1500        # số frame đầu dùng để ước lượng
+    bin_px: 25          # bề rộng mỗi khoảng y_chân, pixel
+    quantile: 90        # phân vị chiều cao trong mỗi khoảng, % (mảnh người thấp, người nguyên vẹn cao)
+    min_count: 20       # khoảng có ít box hơn thì bỏ
+  # Lọc box: diện tích (pixel) và tỉ lệ cao/rộng của người.
+  min_area: 150
+  max_area: 40000
+  min_ratio: 1.0
+  max_ratio: 6.0
+people_tracker:
+  # Tracker mới của hệ thống (src/people_tracker.py). Section `tracker` ở dưới là của tracker cũ.
+  # Lucas-Kanade: cửa sổ [rộng, cao] (pixel), số tầng pyramid, ngưỡng kiểm tra đi-rồi-về (pixel).
+  lk_win_size: [21, 21]
+  lk_max_level: 3
+  fb_threshold_px: 1.0
+  # Ít hơn bấy nhiêu điểm tin cậy thì không dùng LK ở frame đó.
+  min_points: 5
+  # Chọn điểm góc: số điểm tối đa mỗi người, chất lượng tối thiểu, khoảng cách tối thiểu (pixel), co mask foreground (pixel).
+  max_corners: 60
+  quality_level: 0.01
+  min_distance_px: 4
+  points_mask_erode_px: 2
+  # Chọn lại điểm mỗi bấy nhiêu frame (hoặc khi còn ít hơn min_points).
+  refresh_every: 5
+  # IoU tối thiểu để được ghép track với detection.
+  iou_gate: 0.1
+  # Ghép bình thường: chi phí = (1 − IoU) + appearance_weight × (1 − độ giống màu). 0 = chỉ dùng IoU.
+  appearance_weight: 0.0
+  # Cập nhật màu và ảnh mẫu của track: mới = (1 − r)·cũ + r·hiện tại. 1.0 = thay hẳn mỗi frame.
+  appearance_update_rate: 1.0
+  # tentative → confirmed: thấy liên tiếp đủ bấy nhiêu lần VÀ đã đi được ít nhất bấy nhiêu pixel (loại phản chiếu đứng yên, XLA 2.16).
+  confirm_hits: 3
+  min_confirm_displacement_px: 5
+  # Mất detection liên tiếp quá bấy nhiêu frame thì track kết thúc (không tính lúc merged hay static).
+  max_misses: 10
+  # Làm mượt kích thước box: kích thước mới = (1 − a)·cũ + a·detection.
+  size_smoothing: 0.3
+  # Detection có diện tích to hơn track quá bấy nhiêu lần (hoặc nhỏ hơn 1/bấy nhiêu nếu guard_shrink) thì coi là khả nghi:
+  # vẫn tính là còn thấy người, nhưng không lấy vị trí, kích thước, ảnh mẫu, màu từ nó (thường là đã dính người khác hoặc bị che).
+  max_size_change: 1.6
+  # Có chặn cả detection NHỎ đi bất thường không (người bị che một phần). Thí nghiệm ở docs/11_tracker_moi.md.
+  guard_shrink: true
+  # ...và chỉ khi detection chồng lên box của người khác ít nhất tỉ lệ này (phần box người khác nằm trong detection).
+  contamination_coverage: 0.2
+  # Blob gộp: phần box dự đoán nằm trong detection; blob tách: phần detection nằm trong box dự đoán.
+  merge_coverage: 0.6
+  # Track ĐANG ở trạng thái gộp chỉ cần phần box nằm trong blob ≥ mức này là vẫn tính trong blob (ngưỡng có độ trễ), để không chập chờn ở mép blob rồi bị tính là mất.
+  merge_keep_coverage: 0.3
+  # Hai track trong cùng một detection, xếp trên – dưới, chồng nhau theo chiều dọc ≤ tỉ lệ này
+  # (so với chiều cao box thấp hơn) thì là hai mảnh của cùng một người: bỏ track trẻ hơn. 0–1.
+  # Mặc định TẮT (−1): trong hành lang nhìn dọc, người ở xa nằm ngay trên đầu người ở gần nên bị bỏ nhầm.
+  fragment_max_vertical_overlap: -1
+  split_coverage: 0.7
+  # Trong blob gộp: tìm lại từng người bằng so khớp ảnh mẫu (NCC) trong vùng box nới thêm margin × cỡ box;
+  # chỉ tin khi điểm NCC ≥ template_min_score (thang −1 đến 1). Mặc định TẮT: thử nghiệm làm kết quả tệ đi (docs/11_tracker_moi.md).
+  template_search: false
+  template_search_margin: 0.3
+  template_min_score: 0.6
+  # Giữ track ở trạng thái merged tối đa bấy nhiêu frame.
+  merge_max_frames: 90
+  # Đứng yên: độ dịch LK không quá bấy nhiêu pixel/frame; giữ trạng thái static tối đa bấy nhiêu frame.
+  static_shift_px: 0.5
+  static_max_frames: 300
+  # Trong bấy nhiêu frame sau khi ra khỏi blob gộp, track được ghép bằng nhiều tín hiệu (vị trí + ảnh mẫu + màu) thay vì chỉ IoU.
+  recover_window_frames: 1
+  # Ghép lại sau blob gộp: khoảng cách tối đa (× đường chéo box), trọng số 3 tín hiệu, chi phí tối đa.
+  recover_max_dist_ratio: 1.0
+  recover_weight_motion: 0.5
+  recover_weight_template: 0.25
+  recover_weight_color: 0.25
+  recover_max_cost: 0.7
+  # Ghép lại sau blob gộp chỉ khi màu áo/quần giống ít nhất mức này (0–1).
+  recover_min_color_similarity: 0.5
+  # Detection còn thừa mà chồng lên track đang có từ mức IoU này trở lên thì không tạo track mới.
+  new_track_max_iou: 0.3
+  # Chỉ tạo track mới từ detection cao ít nhất tỉ lệ này × chiều cao người mong đợi ở vị trí chân đó
+  # (mô hình chiều cao, QĐ-27). Mảnh đầu/chân thì thấp hơn nhiều. 0 = tắt. Đơn vị: tỉ lệ 0–1.
+  new_track_min_height_ratio: 0.6
+  # Detection cách mép ảnh không quá chừng này (pixel) thì không xét chiều cao: người đang bước vào bị cắt.
+  new_track_border_px: 5
 tracker:
   # Lucas-Kanade: cửa sổ lớn hơn bù dịch nhiều pixel; pyramid giảm ảnh hưởng chuyển động vừa.
   winSize: [21, 21]
@@ -41,13 +162,95 @@ tracker:
   confirm_hits: 3
   max_misses: 10
   box_update_alpha: 0.2
+  # IoU legacy vẫn dùng làm bằng chứng blob bổ sung.
+  blob_iou: 0.2
+  # Coverage tối thiểu của từng track để detection được xem là chứa track đó.
+  blob_track_coverage: 0.75
+  # Tâm hai track phải cách nhau ít nhất tỷ lệ này của đường chéo box nhỏ hơn.
+  blob_center_separation: 0.35
+  # Số frame tối đa giữ track sau khi blob cuối cùng được xác nhận.
+  blob_grace_frames: 35
+  # Histogram HSV H-S dùng 16 bins cho Hue và 16 bins cho Saturation.
+  hist_bins: [16, 16]
+  # Tương quan histogram tối thiểu để cho phép phục hồi ID sau khi blob tách.
+  hist_corr_min: 0.7
 events:
-  crossing_margin: 5
+  # Phần đếm VÀO/RA qua cửa đã bỏ (QĐ-21). Section này để rỗng vì src/config.py của code cũ bắt buộc phải có.
+  {}
+tracklet_linking:
+  # Nối hai đoạn track của cùng một người (src/tracklet_linking.py). Đoạn sau phải bắt đầu
+  # sau khi đoạn trước kết thúc, cách nhau không quá bấy nhiêu frame (120 = 4 giây ở 30 fps; chọn bằng quét lưới, docs/13_noi_tracklet.md).
+  max_gap_frames: 120
+  # Đo vận tốc cuối của đoạn trước trên bấy nhiêu frame cuối.
+  velocity_frames: 5
+  # Chỗ bắt đầu đoạn sau lệch khỏi chỗ đoán không quá bấy nhiêu lần đường chéo box.
+  max_dist_ratio: 3.0
+  # Độ giống màu áo/quần tối thiểu (0–1) để được nối.
+  min_color_similarity: 0.5
+  # Chi phí = weight_motion × khoảng cách chuẩn hóa + weight_color × (1 − độ giống màu); chi phí tối đa để nối.
+  weight_motion: 0.5
+  weight_color: 0.5
+  max_cost: 1.0
+kalman:
+  # Độ lệch chuẩn của gia tốc ngẫu nhiên (pixel/frame²). Người hay đổi tốc độ, đổi hướng thì tăng lên.
+  # 0.1 chọn bằng quét lưới trên video tổng hợp v2 (docs/04_kalman.md); phải hiệu chỉnh lại trên dev thật.
+  acceleration_std_px: 0.1
+  # Độ lệch chuẩn sai số khi đo tâm người bằng detection (pixel).
+  detection_noise_px: 4.0
+  # Độ lệch chuẩn sai số khi đo tâm người bằng Lucas-Kanade (pixel).
+  lk_noise_px: 3.0
+  # Độ không chắc chắn ban đầu của vận tốc khi mới tạo track (pixel/frame).
+  initial_velocity_std_px: 5.0
+homography:
+  # Khi click hơn 4 cặp điểm sàn: cặp nào chiếu lệch quá ngưỡng này (pixel) bị RANSAC coi là click nhầm.
+  ransac_threshold_px: 3.0
 features:
-  orb_nfeatures: 500
-  sift_nfeatures: 500
+  # Kích thước crop chuẩn (rộng, cao; pixel) trước khi trích đặc trưng. Giữ tỉ lệ, phần thừa đệm đen và bị mask loại.
+  crop_size: [128, 256]
+  # Phương pháp keypoint mặc định: sift, orb, sift_auto hoặc asift (QĐ-14).
+  method: sift
+  # Số keypoint tối đa giữ lại cho MỌI phương pháp, để so sánh công bằng (XLA 2.7).
+  max_keypoints: 200
+  # ORB cho crop nhỏ: để mặc định 31 thì chỉ lấy được dải giữa crop (XLA 2.7).
+  orb_edge_threshold: 8
+  orb_patch_size: 15
+  # sift_auto: crop có ít hơn bấy nhiêu keypoint thì chạy lại với contrastThreshold nhỏ dần theo danh sách.
+  sift_auto_min_keypoints: 60
+  sift_auto_contrast_thresholds: [0.04, 0.02, 0.01]
+  # Co mask vào trong bấy nhiêu pixel trước khi tìm keypoint, để vùng quanh keypoint không lẫn viền/nền (XLA 2.6).
+  mask_erode_px: 4
+  # Thân trên / thân dưới theo tỉ lệ chiều cao crop (bỏ phần đầu 0–15%) khi tính histogram màu.
+  upper_body: [0.15, 0.55]
+  lower_body: [0.55, 1.0]
+  # Số ô histogram cho kênh H (màu gì) và kênh S (đậm hay nhạt).
+  hist_bins: [16, 16]
+  # Gallery: số crop tối đa mỗi track; hai crop cách nhau ít nhất bấy nhiêu frame; lề mép ảnh (pixel).
+  gallery_size: 5
+  gallery_min_gap_frames: 15
+  gallery_border_px: 2
 reid:
-  match_threshold: 0.7
+  # Điểm giống nhau tổng (0–1) dưới mức này thì "không khớp ai" (global_id = −1, XLA 3.2).
+  # 0.3 chọn trên video tổng hợp v2 (cùng người 0,42–0,94; khác người ≤ 0,14); phải hiệu chỉnh lại trên dev thật.
+  match_threshold: 0.3
+  # Ratio test của Lowe: chỉ giữ cặp khớp khi khoảng cách tốt nhất < ratio × khoảng cách tốt nhì.
+  ratio_test: 0.75
+  # Ràng buộc dọc: hai điểm khớp lệch nhau theo chiều cao không quá tỉ lệ này của crop (XLA 2.8).
+  vertical_tolerance: 0.1
+  # Ít hơn bấy nhiêu cặp khớp tốt thì điểm keypoint = 0 (XLA 2.8).
+  min_matches: 6
+  # Đủ bấy nhiêu cặp khớp tốt thì điểm keypoint = 1.
+  feature_saturation_matches: 30
+  # RANSAC sau ràng buộc dọc: chỉ bật khi làm thí nghiệm so sánh (QĐ-06).
+  use_ransac: false
+  ransac_threshold_px: 5.0
+  # σ (pixel, ảnh camera B) của điểm vị trí sàn exp(−d²/2σ²): lệch đúng σ thì điểm còn khoảng 0,6.
+  geo_sigma_px: 25.0
+  # Trọng số khi gộp điểm keypoint, màu và vị trí sàn (hiệu chỉnh bằng quét lưới trên dev).
+  weight_feature: 0.4
+  weight_color: 0.4
+  weight_geometry: 0.2
+  # Hệ thống end-to-end: track xuất hiện ít hơn bấy nhiêu frame (đã xác nhận) thì không đưa vào nhận dạng lại.
+  min_track_frames: 10
 benchmark:
   warmup_frames: 10
 

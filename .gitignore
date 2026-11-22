@@ -1,0 +1,12 @@
+# Môi trường ảo và cache Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Kết quả chạy: sinh lại được từ code + data, không commit
+outputs/*
+!outputs/README.md
+
+# Metadata Windows sinh ra khi copy file sang WSL
+*:Zone.Identifier

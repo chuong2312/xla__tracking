@@ -10,6 +10,8 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 ROOT = Path(__file__).resolve().parents[1]
+# Trạng thái track được chấm điểm: confirmed (tracker cũ và mới), merged và static (chỉ tracker mới có).
+SCORED_TRACK_STATES = {"confirmed", "merged", "static"}
 
 def read_csv_rows(path: str | Path, required: tuple[str, ...]) -> list[dict[str, str]]:
     """Đọc CSV, xác thực header bắt buộc; cho phép CSV rỗng chỉ khi vẫn có header."""
@@ -42,7 +44,7 @@ def _load_boxes(path: str | Path, kind: str) -> dict[int,list[dict[str, Any]]]:
     by_frame: dict[int,list[dict[str,Any]]] = defaultdict(list)
     for row in rows:
         frame = _int(row,"frame",str(path))
-        if kind == "track" and row["state"] != "confirmed": continue
+        if kind == "track" and row["state"] not in SCORED_TRACK_STATES: continue
         identity = None if kind == "det" else _int(row,"track_id" if kind == "track" else "gt_id",str(path))
         by_frame[frame].append({"id":identity,"box":_box(row,str(path))})
     return by_frame
@@ -66,16 +68,42 @@ def detection_pr(det_csv: str | Path, gt_csv: str | Path, iou_thr: float | None 
     """Tính precision=TP/(TP+FP), recall=TP/(TP+FN); Hungarian ghép riêng từng frame có GT.
 
     Detection ở frame không có hàng GT bị bỏ qua theo hợp đồng chỉ chấm frame có GT.
+    Nếu file đáp án có cột occluded và keyframe (QĐ-15) thì chỉ chấm frame gán tay
+    và không có box bị che nặng (XLA 3.3), xem `scored_frames`.
     Ghép được tính khi IoU lớn hơn hoặc bằng ngưỡng.
     Mẫu số bằng 0 cho precision/recall được quy ước là 0.
     """
     threshold=default_iou_threshold() if iou_thr is None else _validate_threshold(iou_thr)
     detections=_load_boxes(det_csv,"det"); ground_truth=_load_boxes(gt_csv,"gt")
+    allowed=scored_frames(gt_csv)
     tp=fp=fn=0
     for frame,truths in ground_truth.items():
+        if allowed is not None and frame not in allowed:
+            continue
         found=detections.get(frame,[]); matches=_match_boxes(found,truths,threshold)
         tp+=len(matches); fp+=len(found)-len(matches); fn+=len(truths)-len(matches)
     return {"precision":tp/(tp+fp) if tp+fp else 0.0,"recall":tp/(tp+fn) if tp+fn else 0.0,"tp":tp,"fp":fp,"fn":fn}
+
+def scored_frames(gt_csv: str | Path) -> set[int] | None:
+    """Các frame được dùng để chấm precision/recall của detector (XLA 3.3).
+
+    Một frame được chấm khi mọi box của nó đều gán tay (keyframe = 1) và không
+    box nào bị che nặng (occluded = 2). Frame nội suy không được chấm vì box do
+    máy đoán, không phải đáp án thật.
+    Trả về None nếu file đáp án theo định dạng cũ (không có hai cột này): khi đó
+    mọi frame có đáp án đều được chấm như trước.
+    """
+    rows = read_csv_rows(gt_csv, ("frame",))
+    if not rows or "keyframe" not in rows[0] or "occluded" not in rows[0]:
+        return None
+    all_frames: set[int] = set()
+    excluded: set[int] = set()
+    for row in rows:
+        frame = _int(row, "frame", str(gt_csv))
+        all_frames.add(frame)
+        if _int(row, "keyframe", str(gt_csv)) != 1 or _int(row, "occluded", str(gt_csv)) == 2:
+            excluded.add(frame)
+    return all_frames - excluded
 
 def count_accuracy(det_csv: str | Path, manual_counts_csv: str | Path) -> dict[str,float|int]:
     """Tỷ lệ frame trong các đoạn đếm thủ công mà số hàng detection đúng bằng count."""
@@ -208,7 +236,10 @@ def main() -> None:
     reid=sub.add_parser("reid"); reid.add_argument("global_ids"); reid.add_argument("gt_reid"); reid.add_argument("--scores"); reid.add_argument("--method")
     args=parser.parse_args()
     if args.command=="det": _print_table("Detection metrics",detection_pr(args.detections,args.gt,args.iou_thr))
-    elif args.command=="track": _print_table("Tracking metrics",tracking_metrics(args.tracks,args.gt,args.iou_thr))
+    elif args.command=="track":
+        from src.mot_metrics import mot_metrics
+        _print_table("Tracking metrics",tracking_metrics(args.tracks,args.gt,args.iou_thr))
+        _print_table("MOT metrics (MOTA, MOTP, IDF1)",mot_metrics(args.tracks,args.gt,args.iou_thr))
     else:
         _print_table("Re-ID metrics",reid_metrics(args.global_ids,args.gt_reid))
         _print_table("Confusion matrix",confusion_matrix(args.global_ids,args.gt_reid))

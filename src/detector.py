@@ -31,19 +31,12 @@ class Detector:
         self._max_ratio = _positive_number(detector_cfg, "max_ratio")
         if self._max_area < self._min_area or self._max_ratio < self._min_ratio:
             raise ValueError("Khoảng diện tích/tỷ lệ detector không hợp lệ")
-        self._use_hog = _get(detector_cfg, "use_hog_baseline", False)
         self._mog2 = cv2.createBackgroundSubtractorMOG2(
             history=self._history,
             varThreshold=self._var_threshold,
             detectShadows=True,
         )
         self._mask: np.ndarray | None = None
-        self._hog = None
-        if self._use_hog:
-            if not hasattr(cv2, "HOGDescriptor") or not hasattr(cv2, "HOGDescriptor_getDefaultPeopleDetector"):
-                raise RuntimeError("Bản OpenCV hiện tại không có HOGDescriptor")
-            self._hog = cv2.HOGDescriptor()
-            self._hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
     def detect(self, frame_bgr: np.ndarray) -> list[tuple[int, int, int, int]]:
         """Xử lý frame BGR đã resize và trả box (x,y,w,h)."""
@@ -68,8 +61,6 @@ class Detector:
             ratio = height / width if width else float("inf")
             if self._min_area <= area <= self._max_area and self._min_ratio <= ratio <= self._max_ratio:
                 boxes.append((x, y, width, height))
-        if self._use_hog:
-            boxes.extend(self.hog_detect(frame_bgr))
         return boxes
 
     def get_foreground_mask(self) -> np.ndarray:
@@ -77,13 +68,6 @@ class Detector:
         if self._mask is None:
             raise RuntimeError("Chưa có foreground mask; gọi detect(frame) trước")
         return self._mask.copy()
-
-    def hog_detect(self, frame_bgr: np.ndarray) -> list[tuple[int, int, int, int]]:
-        """Chạy HOG+SVM cổ điển làm baseline tùy chọn."""
-        if self._hog is None:
-            raise RuntimeError("HOG baseline chưa được bật hoặc không khả dụng")
-        rects, _ = self._hog.detectMultiScale(frame_bgr)
-        return [(int(x), int(y), int(w), int(h)) for x, y, w, h in rects]
 
     def _apply_regions(self, mask: np.ndarray) -> None:
         """Đưa pixel ngoài ROI và trong vùng che về 0 an toàn."""

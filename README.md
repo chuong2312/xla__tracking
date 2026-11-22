@@ -12,9 +12,57 @@ pip install -r requirements.txt
 
 Chạy lệnh từ thư mục `xla_tracking`.
 
+## Phương án mới và các module đã làm
+
+Phương án mới nằm trong `docs/de_xuat_phuong_an.md`. Gặp từ khó thì tra `docs/tu_dien_thuat_ngu.md`. Các module dưới đây đã làm xong; mỗi module có một tài liệu giải thích bằng tiếng Việt và một lệnh xuất ảnh minh họa:
+
+| Module | Tài liệu | Lệnh minh họa |
+|---|---|---|
+| Video tổng hợp v2 | `docs/01_video_tong_hop.md` | `python -m tools.make_synthetic_v2 --out data/synthetic_v2 --explain outputs/explain/video_tong_hop` |
+| Homography mặt sàn | `docs/02_homography_san.md` | `python tools/calibrate_floor.py --cam-a … --cam-b … --out … --explain …` |
+| Ghép cặp Hungarian | `docs/03_ghep_cap_hungarian.md` | `python -m tools.explain_assignment` |
+| Kalman | `docs/04_kalman.md` | `python -m tools.explain_kalman` |
+| MOTA, MOTP, IDF1 | `docs/06_cham_diem_mota_idf1.md` | `python -m src.metrics track <tracks.csv> <gt.csv>` |
+| Đặc trưng ngoại hình (SIFT/ORB/ASIFT, màu) | `docs/08_dac_trung_ngoai_hinh.md` | xem module 09 |
+| Nhận dạng lại giữa 2 camera | `docs/09_nhan_dang_lai.md` | `python -m tools.run_reid --scene data/synthetic_v2/s4` và `python -m tools.explain_reid` |
+| Tìm người (mô hình chiều cao, gộp mảnh) | `docs/10_tim_nguoi.md` | `python -m tools.explain_height_model --video data/real/4p-c1.mp4 --frame 1800` |
+| Homography sàn từ hiệu chỉnh EPFL | `docs/02_homography_san.md` | `python -m tools.epfl_homography --calib data/real/epfl_4p_c0_c1/calibration-4p.txt --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1 --explain outputs/explain/homography_epfl.png` |
+
+**Chạy cả hệ thống** (tìm người → bám người → nối track bị đứt → nhận dạng lại giữa 2 camera → chấm điểm):
+
+```bash
+python run.py --scene data/synthetic_v2/s2 --debug-video
+```
+
+Giải thích chi tiết ở `docs/10_tim_nguoi.md`, `docs/11_tracker_moi.md`, `docs/12_he_thong.md` và `docs/13_noi_tracklet.md`.
+
+**Video thật EPFL** (4 người, 2 camera; nguồn và bản quyền ở `data/real/epfl_4p_c0_c1/nguon.txt`):
+
+```bash
+python run.py --scene data/real/epfl_4p_c0_c1 --debug-video   # khoảng 2 phút
+```
+
+**Tự chỉnh tham số:** đọc `docs/14_hieu_chinh_tham_so.md`, sửa `config.yaml`, rồi chấm lại bằng
+
+```bash
+python -m tools.hieu_chinh                                            # chấm config hiện tại
+python -m tools.hieu_chinh --set "people_tracker.max_misses=[5, 10]"   # thử nhiều giá trị
+```
+
+Chạy test bằng `python -m pytest`. Phải có `python -m`: lệnh `pytest` trơn không tìm thấy thư mục `src`.
+
 ## Gán nhãn GT
 
-Chạy từ thư mục `xla_tracking`: `python tools/annotate.py --video data/input.mp4 --out data/gt_tracking.csv`. Kéo chuột để tạo box, nhấn phím số 0–9 để gán ID; `n`/`p` chuyển keyframe, `u` hoàn tác box đang chờ, `e` đánh dấu ID hết từ frame hiện tại, `s` lưu và `q` lưu rồi thoát. Các box chỉ được nội suy giữa keyframe đã gán của cùng ID.
+Chạy từ thư mục `xla_tracking`: `python tools/annotate.py --video data/input.mp4 --out data/gt_tracking.csv`. Các thao tác:
+- Kéo chuột để tạo box, rồi nhấn phím số 0–9 để gán ID.
+- `o` đổi mức che của box vừa gán (0 không che, 1 che một phần, 2 che nặng).
+- `n`/`p` chuyển keyframe sau/trước.
+- `u` hoàn tác box đang chờ.
+- `s` lưu; `q` lưu rồi thoát.
+
+Thêm `--size 640 360` nếu video không theo kích thước trong `config.yaml`. Box chỉ được nội suy giữa các keyframe đã gán của cùng một ID.
+
+File đáp án có các cột `frame,gt_id,x,y,w,h,occluded,keyframe` (QĐ-15).
 
 Kiểm tra nhãn và xuất overlay: `python tools/verify_gt.py --video data/input.mp4 --gt data/gt_tracking.csv --out outputs/gt_check.mp4`.
 
@@ -26,7 +74,7 @@ Chạy phát hiện chuyển động trên video (frame được resize một l�
 python run_detector.py --video data/synthetic/cross/cam_a/video.mp4 --out outputs/detections.csv --debug-video outputs/detector_debug.mp4
 ```
 
-Các tham số nền, morphology, diện tích và tỷ lệ hình học nằm trong section `detector` của `config.yaml`. `learningRate: 0.001` được đặt thấp để nền thích nghi chậm, giảm khả năng MOG2 hấp thụ người đứng yên; đổi lại, bóng ma chuyển động có thể tồn tại lâu hơn. `use_hog_baseline` mặc định `false`; HOG+SVM là baseline cổ điển tùy chọn, không thay MOG2.
+Các tham số nền, morphology, diện tích và tỷ lệ hình học nằm trong section `detector` của `config.yaml`. `learningRate: 0.001` được đặt thấp để nền thích nghi chậm, giảm khả năng MOG2 hấp thụ người đứng yên; đổi lại, bóng ma chuyển động có thể tồn tại lâu hơn. HOG+SVM đã bị xóa vì là học máy (xem `docs/quyet_dinh_thiet_ke.md`, QĐ-04).
 
 `scene.roi` là vùng giữ lại dạng `[x1, y1, x2, y2]`; `null` nghĩa là dùng toàn ảnh. `scene.ignore_regions` là danh sách vùng che dạng `[[x, y, w, h], ...]`. ROI và vùng che đều tính trên ảnh sau resize; pixel vùng che bị đưa về 0 trước connected components và trong mask trả về bởi `get_foreground_mask()`.
 
@@ -51,4 +99,4 @@ python run_tracking.py --video data/synthetic/cross/cam_a/video.mp4 --out output
 python -m src.metrics track outputs/tracks.csv data/synthetic/cross/gt_tracking.csv
 ```
 
-Tracker dùng LK để dịch từng box theo median displacement của feature points, kiểm tra Forward-Backward, rồi gán detection bằng Hungarian và IoU gate (`matcher: greedy` bật baseline greedy). Track mới bắt đầu tentative và chỉ confirmed sau số hit liên tiếp trong `tracker.confirm_hits`; ID tăng đơn điệu, không tái sử dụng. Tham số LK, feature, matching, vòng đời và hệ số cập nhật box đều ở section `tracker` trong `config.yaml`.
+Tracker dùng LK để dịch từng box theo median displacement của feature points, kiểm tra Forward-Backward, rồi gán detection bằng Hungarian và IoU gate (`matcher: greedy` bật baseline greedy). Track mới bắt đầu tentative và chỉ confirmed sau số hit liên tiếp trong `tracker.confirm_hits`; ID tăng đơn điệu, không tái sử dụng. Detection được phân loại trước association bằng IoU, coverage của từng predicted track và độ tách biệt tâm; detection merged không được dùng để cập nhật box, histogram hay tạo track. Histogram HSV chỉ lấy từ detection sạch. Track đã được xác nhận nằm trong blob được giữ tối đa `tracker.blob_grace_frames` sau lần blob cuối để chờ detection sạch; track khác vẫn theo `max_misses`. Các tham số LK, blob, histogram, matching và vòng đời nằm ở section `tracker` trong `config.yaml`.

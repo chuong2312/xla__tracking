@@ -52,3 +52,8 @@ class Timer(AbstractContextManager["Timer"]):
 def set_seed(seed: int) -> None:
     """Đặt seed cho bộ sinh số ngẫu nhiên Python và NumPy."""
     random.seed(seed); np.random.seed(seed)
+
+def foot_point(box: Sequence[float]) -> tuple[float, float]:
+    """Điểm chân của box (x, y, w, h): điểm giữa cạnh dưới, tức chỗ chân chạm sàn."""
+    x, y, w, h = box
+    return (x + w / 2.0, y + h)

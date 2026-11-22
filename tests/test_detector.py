@@ -11,7 +11,7 @@ def make_config(**updates):
     detector = {"blur_kernel": 1, "history": 30, "varThreshold": 16.0, "learningRate": 0.001,
         "opening_kernel": 1, "opening_iterations": 0, "closing_kernel": 1, "closing_iterations": 0,
         "dilation_kernel": 1, "dilation_iterations": 0, "min_area": 40, "max_area": 10000,
-        "min_ratio": 0.2, "max_ratio": 5.0, "use_hog_baseline": False}
+        "min_ratio": 0.2, "max_ratio": 5.0}
     detector.update(updates.pop("detector", {}))
     scene = {"resize_width": 160, "resize_height": 120, "roi": None, "ignore_regions": []}
     scene.update(updates.pop("scene", {}))

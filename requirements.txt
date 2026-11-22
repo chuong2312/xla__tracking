@@ -1,7 +1,8 @@
 numpy
-opencv-python>=4.4
+opencv-python==5.1.0.95
 scipy
 pyyaml
 pytest
 psutil
 matplotlib
+pandas

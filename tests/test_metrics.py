@@ -84,3 +84,20 @@ def test_count_accuracy_counts_frames_with_zero_detections(tmp_path):
     from src.metrics import count_accuracy
     result=count_accuracy(det,manual)
     assert result=={"accuracy":2/3,"correct_frames":2,"total_frames":3}
+
+
+def test_detection_pr_scores_only_hand_labelled_frames_without_heavy_occlusion(tmp_path):
+    """XLA 3.3: chỉ chấm keyframe gán tay; bỏ frame nội suy và frame có box che nặng."""
+    columns = ["frame", "gt_id", "x", "y", "w", "h", "occluded", "keyframe"]
+    gt = make_csv(tmp_path / "gt.csv", columns, [
+        (0, 1, 0, 0, 10, 10, 0, 1),
+        (1, 1, 0, 0, 10, 10, 0, 0),
+        (2, 1, 0, 0, 10, 10, 2, 1),
+    ])
+    det = make_csv(tmp_path / "det.csv", ["frame", "x", "y", "w", "h", "area"], [
+        (0, 0, 0, 10, 10, 100),
+        (1, 50, 50, 10, 10, 100),
+        (2, 50, 50, 10, 10, 100),
+    ])
+    result = detection_pr(det, gt, 0.5)
+    assert result == {"precision": 1.0, "recall": 1.0, "tp": 1, "fp": 0, "fn": 0}

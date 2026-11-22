@@ -9,7 +9,7 @@ import pytest
 from src.tracker import Tracker
 
 def config(**changes):
-    values={"winSize":[21,21],"maxLevel":2,"criteria":[3,30,0.01],"use_fb_check":True,"fb_thresh":1.0,"min_points":3,"max_corners":80,"quality_level":0.01,"min_distance":3.0,"block_size":5,"refresh_every":3,"matcher":"hungarian","iou_gate":0.05,"confirm_hits":2,"max_misses":2,"box_update_alpha":0.0}
+    values={"winSize":[21,21],"maxLevel":2,"criteria":[3,30,0.01],"use_fb_check":True,"fb_thresh":1.0,"min_points":3,"max_corners":80,"quality_level":0.01,"min_distance":3.0,"block_size":5,"refresh_every":3,"matcher":"hungarian","iou_gate":0.05,"confirm_hits":2,"max_misses":2,"box_update_alpha":0.0,"blob_iou":0.2,"blob_track_coverage":0.75,"blob_center_separation":0.35,"blob_grace_frames":35,"hist_bins":[16,16],"hist_corr_min":0.7}
     values.update(changes); return {"tracker":values}
 
 def textured_frame(objects,seed=23):
