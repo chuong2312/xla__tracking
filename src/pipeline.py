@@ -1,7 +1,7 @@
 """Chạy hệ thống trên MỘT camera: tìm người (C) → bám người (D).
 
 Trước đó, một lượt chạy trên các frame đầu ước lượng chiều cao người theo vị trí chân
-(src/height_model.py) để bước tìm người gộp đúng các mảnh của cùng một người.
+(src/detect/height_model.py) để bước tìm người gộp đúng các mảnh của cùng một người.
 Mỗi frame:
 1. PersonDetector tìm box các vùng giống người, kèm mask foreground.
 2. PeopleTracker cập nhật track.
@@ -17,11 +17,11 @@ from pathlib import Path
 
 import cv2
 
-from src.detection import PersonDetector
-from src.height_model import HeightModel, fit_height_model, save
-from src.people_tracker import PeopleTracker
-from src.track import ACTIVE_STATES
-from src.utils import iter_video
+from src.detect.detection import PersonDetector
+from src.detect.height_model import HeightModel, fit_height_model, save
+from src.tracking.people_tracker import PeopleTracker
+from src.tracking.track import ACTIVE_STATES
+from src.common.utils import iter_video
 
 STATE_COLORS = {"tentative": (0, 200, 255), "confirmed": (0, 220, 0), "merged": (255, 120, 0), "static": (255, 0, 255), "lost": (0, 0, 255)}
 

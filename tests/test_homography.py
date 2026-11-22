@@ -1,4 +1,4 @@
-"""Kiểm thử homography mặt sàn (src/homography.py) bằng hình học biết trước của video tổng hợp v2."""
+"""Kiểm thử homography mặt sàn (src/common/homography.py) bằng hình học biết trước của video tổng hợp v2."""
 import sys
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import homography
+from src.common import homography
 from tools.calibrate_floor import render_check
 from tools.synthetic_scenarios import LAYOUTS
 from tools.synthetic_scene import floor_to_image

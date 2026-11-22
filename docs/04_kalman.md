@@ -1,6 +1,6 @@
 # 04. Bộ lọc Kalman
 
-> Code: `src/kalman.py`. Ảnh minh họa: `python -m tools.explain_kalman`.
+> Code: `src/common/kalman.py`. Ảnh minh họa: `python -m tools.explain_kalman`.
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán

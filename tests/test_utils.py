@@ -1,5 +1,5 @@
 import pytest
-from src.utils import iou, iou_matrix, scale_rect
+from src.common.utils import iou, iou_matrix, scale_rect
 
 def test_iou_edges():
     assert iou((0,0,2,2),(3,0,2,2))==0

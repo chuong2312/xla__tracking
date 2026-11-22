@@ -64,10 +64,10 @@ def collect_provenance_files(
             roles.setdefault(resolved, set()).add(role)
 
     add(config, "config")
-    add(root / "run_tracking.py", "source")
+    add(root / "legacy/run_tracking.py", "source")
     add(root / "tools" / "trace_tracking.py", "source")
     add(root / "tools" / "make_synthetic.py", "synthetic_generator")
-    for directory, role in ((root / "src", "source"), (root / "tests", "test")):
+    for directory, role in ((root / "src", "source"), (root / "legacy", "source"), (root / "tests", "test")):
         if directory.exists():
             for path in directory.rglob("*.py"):
                 add(path, role)
@@ -194,10 +194,10 @@ def main() -> None:
     parser.add_argument("--config", default="config.yaml")
     args = parser.parse_args()
 
-    from src.config import load_config
-    from src.detector import Detector
-    from src.tracker import Tracker
-    from src.utils import iter_video
+    from legacy.config import load_config
+    from legacy.detector import Detector
+    from legacy.tracker import Tracker
+    from src.common.utils import iter_video
 
     config_path = Path(args.config).resolve()
     video_path = Path(args.video).resolve()
@@ -218,7 +218,7 @@ def main() -> None:
     tracks_path.parent.mkdir(parents=True, exist_ok=True)
     diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger = logging.getLogger("src.tracker")
+    logger = logging.getLogger("legacy.tracker")
     previous_level, previous_propagate = logger.level, logger.propagate
     handler = None
     try:

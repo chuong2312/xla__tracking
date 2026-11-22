@@ -1,6 +1,6 @@
 # 09. Nhận dạng lại giữa hai camera (bước G)
 
-> Code: `src/reid_similarity.py` (tính điểm giống nhau), `src/reid.py` (chuỗi xử lý), `tools/run_reid.py` (chạy và chấm điểm).
+> Code: `src/reid/reid_similarity.py` (tính điểm giống nhau), `src/reid/reid.py` (chuỗi xử lý), `tools/run_reid.py` (chạy và chấm điểm).
 > Ảnh minh họa: `python -m tools.explain_reid`. Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán

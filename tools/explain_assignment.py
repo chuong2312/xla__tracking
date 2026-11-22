@@ -1,4 +1,4 @@
-"""Ảnh minh họa cho ghép cặp Hungarian (src/assignment.py).
+"""Ảnh minh họa cho ghép cặp Hungarian (src/common/assignment.py).
 
 Cách dùng:
     python -m tools.explain_assignment --scene data/synthetic_v2/s2 --camera cam_b --frame 188 --out outputs/explain/ghep_cap
@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
-from src.assignment import assign, iou_cost  # noqa: E402
+from src.common.assignment import assign, iou_cost  # noqa: E402
 from tools.calibrate_floor import first_frame  # noqa: E402
 from tools.verify_gt import read_gt  # noqa: E402
 

@@ -1,6 +1,6 @@
 """Một track: "hồ sơ" của một người trong một camera (bước D).
 
-Vị trí tâm và vận tốc do Kalman giữ (src/kalman.py); kích thước box làm mượt riêng.
+Vị trí tâm và vận tốc do Kalman giữ (src/common/kalman.py); kích thước box làm mượt riêng.
 Các trạng thái (máy trạng thái của tracker mới):
 - tentative: mới thấy, chưa chắc là người thật.
 - confirmed: đã chắc chắn.
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from src.kalman import ConstantVelocityKalman
+from src.common.kalman import ConstantVelocityKalman
 
 STATES = ("tentative", "confirmed", "merged", "static", "lost")
 ACTIVE_STATES = ("confirmed", "merged", "static")

@@ -2,11 +2,11 @@
 import csv
 from pathlib import Path
 import sys
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 import cv2
 import numpy as np
 import pytest
-from src.tracker import Tracker
+from legacy.tracker import Tracker
 
 def config(**changes):
     values={"winSize":[21,21],"maxLevel":2,"criteria":[3,30,0.01],"use_fb_check":True,"fb_thresh":1.0,"min_points":3,"max_corners":80,"quality_level":0.01,"min_distance":3.0,"block_size":5,"refresh_every":3,"matcher":"hungarian","iou_gate":0.05,"confirm_hits":2,"max_misses":2,"box_update_alpha":0.0,"blob_iou":0.2,"blob_track_coverage":0.75,"blob_center_separation":0.35,"blob_grace_frames":35,"hist_bins":[16,16],"hist_corr_min":0.7}
@@ -50,7 +50,7 @@ def test_lost_track_is_reported_then_id_is_never_reused():
 
 def test_fb_check_filters_bad_backward_return(monkeypatch):
     tr=Tracker(config(min_points=1)); previous=np.zeros((40,40),np.uint8); current=previous.copy(); tr._previous_gray=previous
-    from src.tracker import Track
+    from legacy.tracker import Track
     pts=np.array([[[10.,10.]],[[20.,20.]]],np.float32); track=Track(1,"confirmed",(5,5,20,20),pts)
     calls=[(np.array([[[11.,10.]],[[21.,20.]]],np.float32),np.array([[1],[1]],np.uint8)),(np.array([[[10.2,10.]],[[25.,20.]]],np.float32),np.array([[1],[1]],np.uint8))]
     def fake(*args,**kwargs): return (*calls.pop(0),None)
@@ -60,7 +60,7 @@ def test_fb_check_filters_bad_backward_return(monkeypatch):
 
 def test_failed_lk_and_no_points_do_not_predict_motion(monkeypatch):
     tr=Tracker(config(min_points=2)); tr._previous_gray=np.zeros((40,40),np.uint8)
-    from src.tracker import Track
+    from legacy.tracker import Track
     track=Track(1,"confirmed",(5,5,20,20),np.array([[[10.,10.]]],np.float32))
     monkeypatch.setattr(cv2,"calcOpticalFlowPyrLK",lambda *a,**k:(np.array([[[30.,30.]]],np.float32),np.array([[0]],np.uint8),None))
     box,points,sufficient=tr._predict_track(track,np.zeros((40,40),np.uint8),40,40)

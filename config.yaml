@@ -5,7 +5,7 @@ scene:
   annotate_step: 5
   roi: null
   ignore_regions: []
-  # Không còn dùng (QĐ-21); giữ lại vì src/config.py của code cũ bắt buộc phải có.
+  # Không còn dùng (QĐ-21); giữ lại vì legacy/config.py của code cũ bắt buộc phải có.
   door_line: [320, 0, 320, 480]
 detector:
   # Learning rate thấp giúp hạn chế MOG2 hấp thụ người đứng yên.
@@ -24,7 +24,7 @@ detector:
   min_ratio: 1.2
   max_ratio: 5.0
 detection:
-  # Bước C của hệ thống mới (src/detection.py). Section `detector` ở trên là của detector cũ.
+  # Bước C của hệ thống mới (src/detect/detection.py). Section `detector` ở trên là của detector cũ.
   # Mô hình nền: median_running (trung vị + cập nhật có chọn lọc) hoặc mog2 (QĐ-03).
   # Chọn MOG2 theo dữ liệu thật EPFL (QĐ-25): trừ nền trung vị coi ~15% ảnh là foreground (nhấp nháy, nhiễu nén), MOG2 chỉ ~5%.
   background: mog2
@@ -61,7 +61,7 @@ detection:
   # group_max_height_ratio × chiều cao người mong đợi ở vị trí chân đó (QĐ-26).
   group_max_gap_ratio: 1.0
   group_max_height_ratio: 1.15
-  # Mô hình chiều cao người theo vị trí chân, tự ước lượng từ các frame đầu của video (src/height_model.py).
+  # Mô hình chiều cao người theo vị trí chân, tự ước lượng từ các frame đầu của video (src/detect/height_model.py).
   height_model:
     enabled: true
     frames: 1500        # số frame đầu dùng để ước lượng
@@ -74,7 +74,7 @@ detection:
   min_ratio: 1.0
   max_ratio: 6.0
 people_tracker:
-  # Tracker mới của hệ thống (src/people_tracker.py). Section `tracker` ở dưới là của tracker cũ.
+  # Tracker mới của hệ thống (src/tracking/people_tracker.py). Section `tracker` ở dưới là của tracker cũ.
   # Lucas-Kanade: cửa sổ [rộng, cao] (pixel), số tầng pyramid, ngưỡng kiểm tra đi-rồi-về (pixel).
   lk_win_size: [21, 21]
   lk_max_level: 3
@@ -175,10 +175,10 @@ tracker:
   # Tương quan histogram tối thiểu để cho phép phục hồi ID sau khi blob tách.
   hist_corr_min: 0.7
 events:
-  # Phần đếm VÀO/RA qua cửa đã bỏ (QĐ-21). Section này để rỗng vì src/config.py của code cũ bắt buộc phải có.
+  # Phần đếm VÀO/RA qua cửa đã bỏ (QĐ-21). Section này để rỗng vì legacy/config.py của code cũ bắt buộc phải có.
   {}
 tracklet_linking:
-  # Nối hai đoạn track của cùng một người (src/tracklet_linking.py). Đoạn sau phải bắt đầu
+  # Nối hai đoạn track của cùng một người (src/tracking/tracklet_linking.py). Đoạn sau phải bắt đầu
   # sau khi đoạn trước kết thúc, cách nhau không quá bấy nhiêu frame (120 = 4 giây ở 30 fps; chọn bằng quét lưới, docs/13_noi_tracklet.md).
   max_gap_frames: 120
   # Đo vận tốc cuối của đoạn trước trên bấy nhiêu frame cuối.

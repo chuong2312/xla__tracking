@@ -4,13 +4,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 
 import cv2
 import numpy as np
 import pytest
 
-from src.tracker import Track, Tracker
+from legacy.tracker import Track, Tracker
 
 
 def _cfg(**changes):
@@ -231,12 +231,12 @@ def test_prediction_diagnostics_count_lk_ownership_filtering(caplog,monkeypatch)
     import logging
     points=[(12,12),(18,16),(35,20),(60,60)]
     neighbors=((2,"confirmed",(30,10,20,25)),)
-    with caplog.at_level(logging.INFO,logger="src.tracker"):
+    with caplog.at_level(logging.INFO,logger="legacy.tracker"):
         tracker,_,_,_,_=_predict(
             monkeypatch,(10,10,20,20),points,neighbors,
             {12:(2,0),18:(2,0),35:(20,0),60:(1,0)},min_points=2,
         )
-    events=[json.loads(record.getMessage()) for record in caplog.records if record.name=="src.tracker"]
+    events=[json.loads(record.getMessage()) for record in caplog.records if record.name=="legacy.tracker"]
     prediction=next(event for event in events if event["event"]=="prediction")
     assert prediction["points_after_fb_check"]==4
     assert prediction["points_rejected_neighbor"]==1

@@ -1,6 +1,6 @@
 # 06. Chấm điểm bám người: MOTA, MOTP, IDF1
 
-> Code: `src/mot_metrics.py`. Chạy: `python -m src.metrics track <tracks.csv> <gt_tracking.csv>`, lệnh in thêm bảng "MOT metrics".
+> Code: `src/evaluation/mot_metrics.py`. Chạy: `python -m src.evaluation.metrics track <tracks.csv> <gt_tracking.csv>`, lệnh in thêm bảng "MOT metrics".
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán
@@ -16,7 +16,7 @@ Khi bảo vệ, hội đồng thường hỏi "so với chuẩn nào?" (XLA 3.4)
    - **FN (bỏ sót):** người có trong đáp án mà không track nào khớp.
    - **FP (báo nhầm):** track không khớp người nào.
    - **IDSW (đổi tên nhầm):** một người trong đáp án bị khớp với track khác so với lần khớp trước.
-3. Chỉ dùng track ở trạng thái `confirmed`, giống `src/metrics.py`.
+3. Chỉ dùng track ở trạng thái `confirmed`, giống `src/evaluation/metrics.py`.
 
 ## Công thức
 

@@ -1,7 +1,7 @@
 """Tìm vùng có người trong một frame (bước C).
 
 Thứ tự các bước:
-1. Mô hình nền cho mask foreground (src/background.py).
+1. Mô hình nền cho mask foreground (src/detect/background.py).
 2. Che ROI và vùng bỏ qua NGAY sau bước 1, trước morphology, để phép giãn không lan
    vào vùng đã che (XLA 2.16).
 3. Opening: xóa chấm nhiễu nhỏ.
@@ -9,7 +9,7 @@ Thứ tự các bước:
    ngang hai người đứng cạnh nhau.
 5. Connected components: mỗi cụm pixel liền nhau cho ra một mảnh.
 6. Gộp các mảnh nằm thẳng hàng theo chiều dọc (đầu, chân của cùng một người bị đứt vì áo trùng
-   màu nền), CHỈ khi có mô hình chiều cao (src/height_model.py) và box gộp không cao quá
+   màu nền), CHỈ khi có mô hình chiều cao (src/detect/height_model.py) và box gộp không cao quá
    `group_max_height_ratio` × chiều cao người mong đợi; nếu không, hai người đứng trước – sau
    trong hành lang sẽ bị gộp nhầm (QĐ-26).
 7. Lọc box theo diện tích và tỉ lệ cao/rộng.
@@ -23,8 +23,8 @@ from collections.abc import Mapping, Sequence
 import cv2
 import numpy as np
 
-from src.background import make_background_model
-from src.height_model import HeightModel
+from src.detect.background import make_background_model
+from src.detect.height_model import HeightModel
 
 Box = tuple[int, int, int, int]
 

@@ -5,9 +5,9 @@ import logging
 from pathlib import Path
 import cv2
 import yaml
-from src.config import load_config
-from src.detector import Detector
-from src.utils import iter_video
+from legacy.config import load_config
+from legacy.detector import Detector
+from src.common.utils import iter_video
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 LOGGER = logging.getLogger("run_detector")

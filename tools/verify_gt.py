@@ -19,8 +19,8 @@ import cv2
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from src.config import load_config  # noqa: E402
-from src.utils import iter_video  # noqa: E402
+from legacy.config import load_config  # noqa: E402
+from src.common.utils import iter_video  # noqa: E402
 
 GtRow = tuple[int, int, int, int, int, int, int, int]
 OCCLUSION_COLORS = {0: (0, 220, 0), 1: (0, 200, 255), 2: (0, 0, 255)}

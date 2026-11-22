@@ -1,4 +1,4 @@
-"""Ảnh minh họa cho nhận dạng lại giữa hai camera (src/reid.py), chế độ oracle.
+"""Ảnh minh họa cho nhận dạng lại giữa hai camera (src/reid/reid.py), chế độ oracle.
 
 Cách dùng:
     python -m tools.explain_reid --scene data/synthetic_v2/s4 --person 3 --out outputs/explain/nhan_dang_lai
@@ -23,11 +23,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
-from src.assignment import assign  # noqa: E402
-from src.color_features import apply_gains, gray_world_gains  # noqa: E402
-from src.keypoint_features import extract, norm_type, normalize_crop  # noqa: E402
-from src.reid import read_frames  # noqa: E402
-from src.reid_similarity import good_matches  # noqa: E402
+from src.common.assignment import assign  # noqa: E402
+from src.reid.color_features import apply_gains, gray_world_gains  # noqa: E402
+from src.reid.keypoint_features import extract, norm_type, normalize_crop  # noqa: E402
+from src.reid.reid import read_frames  # noqa: E402
+from src.reid.reid_similarity import good_matches  # noqa: E402
 from tools.run_reid import run  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

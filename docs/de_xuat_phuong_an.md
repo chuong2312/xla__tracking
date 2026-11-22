@@ -44,7 +44,7 @@ video ─► [C] Tìm vùng chuyển động ─► box ─► [D] Bám người
 |---|---|---|
 | Video thật quay cầm tay | Đo bằng `phaseCorrelate`: camera trôi khoảng 25 px (ở độ rộng 640) sau 15 giây và có cả xoay. Mask MOG2 sáng toàn bộ các cạnh tường (`outputs/real_dev_S1/base/diag/`). | Quay lại bằng chân máy (QĐ-01). |
 | Detector sinh quá nhiều box trên video thật | Có frame ra 13 detection. Video 18 giây chỉ có vài người mà sinh 134 track ID (55 track được xác nhận). | Phần lớn là hệ quả của vấn đề trên. Thêm cách trừ nền mới ở mục 4.C. |
-| Tracker quá phức tạp mà vẫn sai | `src/tracker.py` dài 777 dòng, khoảng 1/3 là diagnostics. `test_tracker_crossing` có 3 lần đổi ID dù dùng detection chuẩn. | Viết lại theo Kalman + LK, mỗi file dưới 200 dòng (QĐ-05). |
+| Tracker quá phức tạp mà vẫn sai | `legacy/tracker.py` dài 777 dòng, khoảng 1/3 là diagnostics. `test_tracker_crossing` có 3 lần đổi ID dù dùng detection chuẩn. | Viết lại theo Kalman + LK, mỗi file dưới 200 dòng (QĐ-05). |
 | Phần chính của đề tài chưa có | `features`, `reid`, `events` mới chỉ là section rỗng trong config. | Làm sớm một bản tối thiểu chạy được từ đầu đến cuối (QĐ-09). |
 | Code viết bằng AI, khó giải thích | Nhiều lệnh dồn trên một dòng bằng `;`, logic ownership có nhiều nhánh. | Áp dụng quy tắc code và viết tài liệu cho từng module (mục 6). |
 
@@ -93,7 +93,7 @@ Interface `BackgroundModel` có 2 cài đặt, chọn bằng `detector.backgroun
 - **`mog2`**: mô hình nền hỗn hợp Gaussian thích nghi của OpenCV.
   - Ưu điểm: có sẵn phát hiện bóng, và về lý thuyết chịu được nền dao động tốt hơn.
   - Nhược điểm: `learningRate` áp cho cả ảnh, nên không cập nhật nền có chọn lọc được (XLA 2.2).
-  - Phần này tái dùng code đã có trong `src/detector.py`.
+  - Phần này tái dùng code đã có trong `legacy/detector.py`.
 
 Cả hai chỉ phát hiện **foreground** (vùng khác nền), không biết pixel nào là người. Box ứng viên là người chỉ có sau bước lọc hình dạng, còn danh tính chỉ có sau bước tracking.
 
@@ -250,7 +250,7 @@ Nội dung dưới đây chỉ còn giá trị lịch sử; code nằm ở commi
    - `global_ids.csv` với các cột `cam,track_id,global_id`.
    - `reid_scores.csv` với các cột `cam_a_track,cam_b_track,method,score`.
 
-   Đây đúng là định dạng mà `src/metrics.py` hiện đã đọc được.
+   Đây đúng là định dạng mà `src/evaluation/metrics.py` hiện đã đọc được.
 
 ### H. Đánh giá và benchmark (XLA 2.14, 3.4)
 
@@ -300,12 +300,12 @@ docs/              tài liệu này và tài liệu của từng module
 ```
 
 **Giữ lại và tái sử dụng:**
-- `src/utils.py`: `iter_video`, `iou`, `iou_matrix`, `Timer`, `set_seed`.
-- Toàn bộ `src/metrics.py` và định dạng các file CSV.
-- Phần ROI, morphology và connected components trong `src/detector.py`.
+- `src/common/utils.py`: `iter_video`, `iou`, `iou_matrix`, `Timer`, `set_seed`.
+- Toàn bộ `src/evaluation/metrics.py` và định dạng các file CSV.
+- Phần ROI, morphology và connected components trong `legacy/detector.py`.
 - `tools/annotate.py` và `tools/verify_gt.py`.
 - Phần manifest provenance trong `tools/trace_tracking.py`.
-- `tests/test_tracker_crossing.py`, dùng làm test chấp nhận cho tracker mới.
+- `tests/legacy/test_tracker_crossing.py`, dùng làm test chấp nhận cho tracker mới.
 - Tracker cũ được giữ lại trong git bằng một tag trước khi thay.
 
 **Video tổng hợp v2** (XLA 2.4):

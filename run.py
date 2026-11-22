@@ -7,9 +7,9 @@ Thư mục cảnh cần có cam_a/video.mp4 và cam_b/video.mp4. Homography A �
 (video tổng hợp) hoặc homography.json (từ tools/calibrate_floor.py), nếu có.
 Các bước:
 1. Mỗi camera: tìm người → bám người (src/pipeline.py).
-2. Mỗi camera: nối các đoạn track bị đứt của cùng một người (src/tracklet_linking.py).
-3. Hai camera: nhận dạng lại, gán ID toàn cục (src/reid.py).
-4. Chấm điểm nếu có đáp án (src/system_eval.py), cả trước lẫn sau khi nối tracklet.
+2. Mỗi camera: nối các đoạn track bị đứt của cùng một người (src/tracking/tracklet_linking.py).
+3. Hai camera: nhận dạng lại, gán ID toàn cục (src/reid/reid.py).
+4. Chấm điểm nếu có đáp án (src/evaluation/system_eval.py), cả trước lẫn sau khi nối tracklet.
 """
 from __future__ import annotations
 
@@ -22,15 +22,15 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from src import homography
-from src.color_features import gray_world_gains
-from src.gallery import Observation
-from src.metrics import detection_pr
-from src.mot_metrics import mot_metrics
+from src.common import homography
+from src.reid.color_features import gray_world_gains
+from src.reid.gallery import Observation
+from src.evaluation.metrics import detection_pr
+from src.evaluation.mot_metrics import mot_metrics
 from src.pipeline import process_camera
-from src.reid import VARIANTS, assign_global_ids, describe_tracks, read_frames, similarity_tables
-from src.system_eval import evaluate_reid, map_tracks_to_gt, read_pairs
-from src.tracklet_linking import link_tracklets, relabel, segments_from_rows
+from src.reid.reid import VARIANTS, assign_global_ids, describe_tracks, read_frames, similarity_tables
+from src.evaluation.system_eval import evaluate_reid, map_tracks_to_gt, read_pairs
+from src.tracking.tracklet_linking import link_tracklets, relabel, segments_from_rows
 
 CAMERAS = ("cam_a", "cam_b")
 TRACK_HEADER = ["frame", "track_id", "state", "x", "y", "w", "h", "n_points"]
@@ -63,7 +63,7 @@ def write_csv(path: Path, header, rows) -> None:
 
 
 def link_camera(video: str, result, config: dict) -> tuple[list[tuple], dict[int, int]]:
-    """Nối tracklet của một camera; màu của mỗi đoạn lấy từ gallery (src/reid.py)."""
+    """Nối tracklet của một camera; màu của mỗi đoạn lấy từ gallery (src/reid/reid.py)."""
     gains = gray_world_gains(read_frames(video, {0})[0])
     observations = observations_from_rows(result.rows, 1)
     described = describe_tracks(video, observations, result.image_size, gains, "sift", config["features"])

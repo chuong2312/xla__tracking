@@ -1,7 +1,7 @@
 """Chỉ số chuẩn cho bài toán bám nhiều người: MOTA, MOTP (CLEAR MOT) và IDF1 (XLA 3.4).
 
 Đây chỉ là các phép đếm trên kết quả và đáp án, không phải học máy. Giống
-src/metrics.py: chỉ chấm frame có đáp án, chỉ dùng track ở trạng thái confirmed,
+src/evaluation/metrics.py: chỉ chấm frame có đáp án, chỉ dùng track ở trạng thái confirmed,
 và một cặp (đáp án, track) khớp khi IoU ≥ ngưỡng `metrics.iou_threshold`.
 
 - MOTA = 1 − (FN + FP + IDSW) / GT
@@ -20,8 +20,8 @@ from pathlib import Path
 
 import numpy as np
 
-from src.assignment import assign
-from src.metrics import _load_boxes, default_iou_threshold, iou
+from src.common.assignment import assign
+from src.evaluation.metrics import _load_boxes, default_iou_threshold, iou
 
 
 def _match_frame(truths: list[dict], preds: list[dict], last_match: dict[int, int], threshold: float) -> list[tuple[int, int]]:

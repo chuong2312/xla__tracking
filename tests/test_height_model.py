@@ -1,8 +1,8 @@
 """Test mô hình chiều cao người theo vị trí chân và việc gộp mảnh dựa trên nó (QĐ-26)."""
 import numpy as np
 
-from src.detection import group_vertical_pieces
-from src.height_model import HeightModel, fit_height_model, theil_sen
+from src.detect.detection import group_vertical_pieces
+from src.detect.height_model import HeightModel, fit_height_model, theil_sen
 
 CFG = {"bin_px": 20, "quantile": 90, "min_count": 5}
 
@@ -43,7 +43,7 @@ def test_theil_sen_ignores_one_outlier():
 
 
 def test_tall_enough_rejects_head_fragment_but_accepts_whole_person():
-    from src.height_model import tall_enough
+    from src.detect.height_model import tall_enough
     heights = HeightModel(a=0.5, b=0.0, points=[])  # chân ở y=200 → người cao 100
     shape = (288, 360)
     assert tall_enough((100, 100, 25, 100), heights, 0.6, shape, 5)
@@ -51,7 +51,7 @@ def test_tall_enough_rejects_head_fragment_but_accepts_whole_person():
 
 
 def test_tall_enough_accepts_short_box_at_image_border():
-    from src.height_model import tall_enough
+    from src.detect.height_model import tall_enough
     heights = HeightModel(a=0.5, b=0.0, points=[])
     assert tall_enough((100, 250, 25, 38), heights, 0.6, (288, 360), 5)  # đáy box chạm mép dưới
 
@@ -59,7 +59,7 @@ def test_tall_enough_accepts_short_box_at_image_border():
 def test_tracker_does_not_start_track_from_fragment():
     import numpy as np
     import yaml
-    from src.people_tracker import PeopleTracker
+    from src.tracking.people_tracker import PeopleTracker
     cfg = yaml.safe_load(open("config.yaml", encoding="utf-8"))
     heights = HeightModel(a=0.5, b=0.0, points=[])
     tracker = PeopleTracker(cfg["people_tracker"], cfg["kalman"], cfg["features"], heights=heights)

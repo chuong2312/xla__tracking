@@ -3,17 +3,17 @@ import csv
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import cv2
 import numpy as np
 import yaml
 from scipy.optimize import linear_sum_assignment
 
-from src.config import load_config
-from src.metrics import tracking_metrics
-from src.tracker import Tracker
-from src.utils import iou
+from legacy.config import load_config
+from src.evaluation.metrics import tracking_metrics
+from legacy.tracker import Tracker
+from src.common.utils import iou
 
 
 def _crossing_boxes(frame_index: int) -> dict[int, tuple[int, int, int, int]]:
@@ -41,7 +41,7 @@ def _render_frame(
 
 def test_three_real_crossing_trajectories_have_zero_switch_and_full_coverage(tmp_path):
     """Ba GT phải giao cắt thật, confirmed trước scoring và đạt coverage config."""
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     cfg = load_config(root / "config.yaml")
     raw_cfg = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8"))
     tracker = Tracker(cfg)

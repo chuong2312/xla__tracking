@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.metrics import detection_pr, tracking_metrics, reid_metrics, rank1, confusion_matrix
+from src.evaluation.metrics import detection_pr, tracking_metrics, reid_metrics, rank1, confusion_matrix
 
 def make_csv(path: Path, columns: list[str], rows: list[tuple]) -> Path:
     with path.open("w",newline="",encoding="utf-8") as stream:
@@ -81,7 +81,7 @@ def test_empty_file_and_missing_required_column_raise(tmp_path):
 def test_count_accuracy_counts_frames_with_zero_detections(tmp_path):
     det=make_csv(tmp_path/"det.csv",["frame","x","y","w","h","area"],[(0,0,0,10,10,100)])
     manual=make_csv(tmp_path/"manual.csv",["frame_start","frame_end","count"],[(0,1,1),(2,2,0)])
-    from src.metrics import count_accuracy
+    from src.evaluation.metrics import count_accuracy
     result=count_accuracy(det,manual)
     assert result=={"accuracy":2/3,"correct_frames":2,"total_frames":3}
 

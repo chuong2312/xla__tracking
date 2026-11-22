@@ -6,7 +6,7 @@ người đó xuất hiện lại với một ID mới. Bước này chạy SAU 
    (hai đoạn chồng thời gian thì không thể là một người).
 2. Vị trí: đoán chỗ của i ở frame s_j bằng vận tốc cuối của i (đo trên vài frame cuối);
    khoảng cách tới chỗ bắt đầu của j, chia cho đường chéo box, phải ≤ max_dist_ratio.
-3. Ngoại hình: độ giống màu (src/color_features.py) phải ≥ min_color_similarity.
+3. Ngoại hình: độ giống màu (src/reid/color_features.py) phải ≥ min_color_similarity.
 4. Chi phí = w_m · khoảng cách chuẩn hóa + w_c · (1 − độ giống màu). Ghép một-một bằng Hungarian:
    mỗi đoạn nối với tối đa một đoạn sau. Các cặp nối thành chuỗi i → j → k, cả chuỗi lấy ID của đoạn đầu.
 """
@@ -18,8 +18,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.assignment import assign
-from src.color_features import color_similarity
+from src.common.assignment import assign
+from src.reid.color_features import color_similarity
 
 ACTIVE = ("confirmed", "merged", "static")
 

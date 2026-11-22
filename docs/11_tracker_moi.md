@@ -1,8 +1,8 @@
 # 11. Tracker mới: bám người và giữ tên (bước D)
 
-> Code: `src/people_tracker.py` (điều phối), `src/track.py` (hồ sơ một người), `src/optical_flow.py` (Lucas-Kanade),
-> `src/blob_analysis.py` (cụm gộp / tách), `src/recovery.py` (ghép lại sau khi tách). Dùng lại `src/kalman.py` và `src/assignment.py`.
-> Tham số ở section `people_tracker` của `config.yaml`. Tracker cũ (`src/tracker.py`) được giữ lại để so sánh.
+> Code: `src/tracking/people_tracker.py` (điều phối), `src/tracking/track.py` (hồ sơ một người), `src/tracking/optical_flow.py` (Lucas-Kanade),
+> `src/tracking/blob_analysis.py` (cụm gộp / tách), `src/tracking/recovery.py` (ghép lại sau khi tách). Dùng lại `src/common/kalman.py` và `src/common/assignment.py`.
+> Tham số ở section `people_tracker` của `config.yaml`. Tracker cũ (`legacy/tracker.py`) được giữ lại để so sánh.
 
 ## Bài toán
 

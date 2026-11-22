@@ -34,7 +34,7 @@
   - MOG2 của OpenCV dùng chung một `learningRate` cho cả ảnh, nên không cập nhật nền có chọn lọc được. Hệ quả là người đứng yên có thể dần bị "nuốt" vào nền (XLA 2.2).
 - **Quyết định:** interface `BackgroundModel` có hai cài đặt:
   - `median_running`: khởi tạo nền bằng trung vị, cập nhật có chọn lọc bằng `accumulateWeighted` kèm mask, khử bóng bằng luật HSV (XLA 1.1).
-  - `mog2`: tái dùng code có sẵn trong `src/detector.py`.
+  - `mog2`: tái dùng code có sẵn trong `legacy/detector.py`.
 
   Cài đặt nào làm mặc định sẽ chọn theo kết quả ablation trên dev, dựa trên hai chỉ số: tỉ lệ frame đếm đúng số người, và kết quả riêng trên S3.
 - **Lý do:**
@@ -45,7 +45,7 @@
 
 ## QĐ-04: Xóa HOG+SVM
 - **Trạng thái:** đề xuất (bắt buộc theo XLA 1).
-- **Bối cảnh:** `src/detector.py` có tùy chọn `use_hog_baseline`, dùng bộ SVM đã được huấn luyện sẵn của OpenCV.
+- **Bối cảnh:** `legacy/detector.py` có tùy chọn `use_hog_baseline`, dùng bộ SVM đã được huấn luyện sẵn của OpenCV.
 - **Quyết định:** xóa hẳn khỏi code và khỏi config, không chỉ tắt đi.
 - **Lý do:** dù đang tắt, hội đồng đọc code vẫn thấy SVM, tức là ML.
 
@@ -61,7 +61,7 @@
 - **Lý do:** Kalman cho dự đoán khi bị che (tính liên tục chuyển động, XLA 2.4). Máy trạng thái thay cho các cờ rời rạc. Mỗi file làm một việc nên dễ giải thích.
 - **Hệ quả:**
   - Tracker cũ được giữ trong git bằng một tag.
-  - `tests/test_tracker_crossing.py` được tái sử dụng làm test chấp nhận.
+  - `tests/legacy/test_tracker_crossing.py` được tái sử dụng làm test chấp nhận.
   - Định dạng `tracks.csv` giữ nguyên.
 
 ## QĐ-06: Ràng buộc dọc là mặc định, RANSAC chỉ để ablation
@@ -195,14 +195,14 @@
 ## QĐ-20: Giai đoạn 2 bắt đầu; tracker mới đặt trong file riêng, tracker cũ giữ lại
 - **Trạng thái:** đã làm (2026-11-21). Nhóm yêu cầu làm phần hệ thống trước, chưa cần dữ liệu thật.
 - **Quyết định:**
-  - Hệ thống mới gồm `src/detection.py`, `src/people_tracker.py`, `src/pipeline.py` và `run.py`.
-  - Tracker cũ (`src/tracker.py`) cùng detector cũ được giữ nguyên, để báo cáo có thể so sánh cũ với mới.
+  - Hệ thống mới gồm `src/detect/detection.py`, `src/tracking/people_tracker.py`, `src/pipeline.py` và `run.py`.
+  - Tracker cũ (`legacy/tracker.py`) cùng detector cũ được giữ nguyên, để báo cáo có thể so sánh cũ với mới.
   - Hệ thống được thử trên video tổng hợp v2.
 - **Ba quy tắc của tracker**, rút ra khi thử ([11_tracker_moi.md](11_tracker_moi.md)):
   1. Box mới to hoặc nhỏ bất thường **và** chồng lên người khác thì không lấy vị trí, kích thước từ box đó.
   2. Chỉ gộp các mảnh nằm trên dưới nhau.
   3. Khi hai người dính nhau, chỉ người đứng trước giữ Lucas-Kanade. Thí nghiệm so sánh: MOTA 0,758, IDF1 0,84, tốt nhất trong 3 cách thử.
-- **Hệ quả:** `src/metrics.py` giờ chấm cả các trạng thái `merged` và `static` (`SCORED_TRACK_STATES`), vì tracker mới vẫn báo vị trí người trong hai trạng thái đó.
+- **Hệ quả:** `src/evaluation/metrics.py` giờ chấm cả các trạng thái `merged` và `static` (`SCORED_TRACK_STATES`), vì tracker mới vẫn báo vị trí người trong hai trạng thái đó.
 
 ## QĐ-21: Bỏ phần đếm VÀO/RA qua cửa
 - **Trạng thái:** đã làm (nhóm quyết định, 2026-11-22).
@@ -228,7 +228,7 @@
 - **Hệ quả:** trong hành lang nhìn dọc, nhiều người đi ngược chiều sẽ chồng lên nhau lâu, nên khó giữ đúng tên ([11](11_tracker_moi.md), [12](12_he_thong.md)).
 
 ## QĐ-23: Nối các đoạn track bị đứt sau khi bám người
-- **Trạng thái:** đã làm (2026-11-22), `src/tracklet_linking.py`.
+- **Trạng thái:** đã làm (2026-11-22), `src/tracking/tracklet_linking.py`.
 - **Quyết định:**
   - Nối đoạn sau với đoạn trước khi đoạn sau bắt đầu sau đoạn trước không quá 120 frame, ở gần chỗ đoán theo vận tốc (không quá 3 lần đường chéo box), và có màu áo giống.
   - Ghép bằng Hungarian.
@@ -261,7 +261,7 @@
 - **Đánh đổi:** trên video tổng hợp, MOG2 cho MOTA cao hơn nhưng nhận dạng lại ở `s2` kém hơn ([12](12_he_thong.md)). MOG2 cập nhật nền cả ảnh, nên người đứng yên lâu có thể bị "nuốt" dần vào nền.
 
 ## QĐ-26: Gộp mảnh người dựa trên mô hình chiều cao theo vị trí chân
-- **Trạng thái:** đã làm (2026-11-22), `src/height_model.py`, `src/detection.py`.
+- **Trạng thái:** đã làm (2026-11-22), `src/detect/height_model.py`, `src/detect/detection.py`.
 - **Vấn đề:** trên EPFL, người mặc áo đen đứng trước ghế hay tường tối bị mất cả phần thân trong mask. Bước tìm người trả về hai mảnh, đầu và chân, và tracker tạo hai track cho cùng một người. Khoảng một nửa số khung là mảnh người (chiều cao trung vị chỉ bằng nửa chiều cao người nguyên vẹn).
 - **Đã thử nhưng bỏ** (trung bình 5 cảnh tổng hợp, sau khi nối tracklet):
   - gộp mọi mảnh xếp trên – dưới: IDF1 0,82 → 0,77; nhận dạng lại `s2` còn 1/4;
@@ -278,7 +278,7 @@
 - **Ca còn sai:** hai người cùng mặc áo đen đứng chồng trước – sau. Box gộp "đầu người sau + chân người trước" chỉ cao hơn một người vài pixel nên vẫn bị gộp (`outputs/explain/chieu_cao/2_gop_manh.png`).
 
 ## QĐ-27: Chỉ tạo track mới từ khung đủ cao một người
-- **Trạng thái:** đã làm (2026-11-22), `src/height_model.py` (`tall_enough`), `src/people_tracker.py` (`_create_tracks`).
+- **Trạng thái:** đã làm (2026-11-22), `src/detect/height_model.py` (`tall_enough`), `src/tracking/people_tracker.py` (`_create_tracks`).
 - **Bối cảnh:** sau QĐ-26, EPFL vẫn có khoảng 4,7 track mỗi frame (cảnh tối đa 4 người) và gần 200 ID mỗi camera. Phân tích các track:
   - khoảng 250 track mỗi camera chết khi còn `confirmed`, tuổi trung vị chỉ 36 frame (1,4 giây);
   - bỏ các track rời khỏi mép ảnh, còn khoảng 200 track; 11 frame trước khi chết, những track này đã không còn điểm LK, và ở frame cuối 85% box gần như trống.

@@ -1,6 +1,6 @@
 # 02. Homography mặt sàn
 
-> Code: `src/homography.py` (tính toán), `tools/calibrate_floor.py` (click điểm và xuất ảnh kiểm tra).
+> Code: `src/common/homography.py` (tính toán), `tools/calibrate_floor.py` (click điểm và xuất ảnh kiểm tra).
 > Gặp từ khó thì tra [tu_dien_thuat_ngu.md](tu_dien_thuat_ngu.md).
 
 ## Bài toán
@@ -56,7 +56,7 @@ EPFL đã đo sẵn cho mỗi camera một ma trận G "ảnh → bản đồ s�
 
 ```
 H_AB = G_B⁻¹ · G_A      (ảnh A → bản đồ sàn → ảnh B)
-python -m tools.epfl_homography --calib data/real/epfl_4p_c0_c1/calibration-4p.txt --cam-a 0 --cam-b 1 \
+python -m tools.epfl_homography --calib data/real/epfl/calibration-4p.txt --cam-a 0 --cam-b 1 \
     --scene data/real/epfl_4p_c0_c1 --explain outputs/explain/homography_epfl.png
 ```
 

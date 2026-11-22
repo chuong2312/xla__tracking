@@ -1,4 +1,4 @@
-"""Ảnh minh họa cho Kalman (src/kalman.py): đoán tiếp vị trí khi người bị che.
+"""Ảnh minh họa cho Kalman (src/common/kalman.py): đoán tiếp vị trí khi người bị che.
 
 Cách dùng:
     python -m tools.explain_kalman --scenario s2 --person 1 --out outputs/explain/kalman
@@ -21,7 +21,7 @@ import yaml
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from src.kalman import ConstantVelocityKalman  # noqa: E402
+from src.common.kalman import ConstantVelocityKalman  # noqa: E402
 from tools.synthetic_render import make_background  # noqa: E402
 from tools.synthetic_scenarios import SCENARIOS  # noqa: E402
 from tools.synthetic_scene import floor_to_image, n_frames, person_box  # noqa: E402

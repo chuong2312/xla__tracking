@@ -11,12 +11,12 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from src.background import MedianRunningBackground
-from src.blob_analysis import find_merged, join_split_detections
-from src.detection import PersonDetector
-from src.people_tracker import PeopleTracker
+from src.detect.background import MedianRunningBackground
+from src.tracking.blob_analysis import find_merged, join_split_detections
+from src.detect.detection import PersonDetector
+from src.tracking.people_tracker import PeopleTracker
 from src.pipeline import process_camera
-from src.mot_metrics import mot_metrics
+from src.evaluation.mot_metrics import mot_metrics
 from tools.make_synthetic_v2 import generate
 
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
@@ -153,9 +153,9 @@ def test_track_already_merged_stays_in_blob_with_lower_coverage():
 
 
 def test_recovery_refuses_detection_with_different_clothes():
-    from src.kalman import ConstantVelocityKalman
-    from src.recovery import colors_of, make_template, recovery_cost
-    from src.track import Track
+    from src.common.kalman import ConstantVelocityKalman
+    from src.tracking.recovery import colors_of, make_template, recovery_cost
+    from src.tracking.track import Track
     frame = _background()
     frame[30:80, 40:60] = (40, 40, 200)
     frame[30:80, 90:110] = (40, 200, 220)

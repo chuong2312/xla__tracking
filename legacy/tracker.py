@@ -9,7 +9,7 @@ import logging
 import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from src.utils import iou
+from src.common.utils import iou
 
 _LOGGER = logging.getLogger(__name__)
 

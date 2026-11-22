@@ -1,4 +1,4 @@
-"""Kiểm thử MOTA, MOTP, IDF1 (src/mot_metrics.py)."""
+"""Kiểm thử MOTA, MOTP, IDF1 (src/evaluation/mot_metrics.py)."""
 import csv
 import sys
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.mot_metrics import mot_metrics
+from src.evaluation.mot_metrics import mot_metrics
 
 
 def _write(path: Path, header, rows) -> Path:

@@ -1,7 +1,7 @@
 """Đổi file hiệu chỉnh camera của EPFL thành homography sàn A → B cho hệ thống (homography.json).
 
 Cách dùng:
-    python -m tools.epfl_homography --calib data/real/epfl_4p_c0_c1/calibration-4p.txt \
+    python -m tools.epfl_homography --calib data/real/epfl/calibration-4p.txt \
         --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1 [--explain outputs/explain/homography_epfl.png]
 
 File của EPFL cho mỗi camera một ma trận G "ảnh → bản đồ sàn nhìn từ trên xuống":
@@ -21,7 +21,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.homography import project
+from src.common.homography import project
 
 
 def read_ground_homographies(path: Path) -> dict[int, np.ndarray]:

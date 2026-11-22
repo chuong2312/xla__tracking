@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.homography import project
+from src.common.homography import project
 from tools.make_synthetic_v2 import generate
 from tools.synthetic_render import person_patch
 from tools.synthetic_scenarios import SCENARIOS
