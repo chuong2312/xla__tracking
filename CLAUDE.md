@@ -116,12 +116,15 @@ python -m tools.run_reid --scene data/synthetic_v2/s4 [--method sift|orb|sift_au
 python -m tools.explain_reid --scene data/synthetic_v2/s4 --person 3   # writes outputs/explain/nhan_dang_lai/
 python -m tools.explain_height_model --video data/real/epfl/4p-c1.mp4 --frame 1800   # writes outputs/explain/chieu_cao/
 python -m tools.epfl_homography --calib data/real/epfl/calibration-4p.txt --cam-a 0 --cam-b 1 --scene data/real/epfl_4p_c0_c1 [--explain <png>]   # EPFL calibration → homography.json (H_AB = G_B⁻¹·G_A)
+python -m tools.tao_canh --cam-a <video> --cam-b <video> --out <scene_dir>   # build a run.py scene by copying videos (no symlinks, so it works on Windows); non-mp4 input is re-encoded
 python -m tools.hieu_chinh [--set "section.key=[v1, v2]" ...] [--no-real]   # one-at-a-time parameter sweep: synthetic s1–s5 MOTA/IDF1/Re-ID + EPFL ID counts; writes outputs/hieu_chinh/<time>/bang_diem.csv
 ```
 
 The video in `data/synthetic_v2` is 640×360, but `config.yaml` still resizes to 640×480. So pass `--size 640 360` to `verify_gt.py` and `annotate.py` when you use them on that data.
 
 No linter, formatter or type checker is set up.
+
+A teammate runs the project on native Windows with a venv (no WSL). So: always pass `encoding="utf-8"` to text file I/O, never rely on symlinks in tracked or documented data layouts, and keep `PYTHONUTF8=1` for subprocesses whose output goes to files (`tools/hieu_chinh.py` sets it). The Windows setup steps are in README.md.
 
 ## Architecture
 

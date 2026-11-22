@@ -23,6 +23,7 @@ import collections
 import copy
 import csv
 import json
+import os
 import subprocess
 import sys
 import time
@@ -66,12 +67,18 @@ def make_variants(config: dict, sets: list[str]) -> list[tuple[str, dict]]:
     return variants
 
 
-def run_scene(config_path: Path, scene: Path, out_dir: Path) -> None:
-    """Chạy run.py cho một cảnh; lỗi thì ghi log để xem lại."""
+def run_scene(config_path: Path, scene: Path, out_dir: Path, threads: int) -> None:
+    """Chạy run.py cho một cảnh; lỗi thì ghi log để xem lại.
+
+    Mỗi lượt chỉ được dùng `threads` luồng CPU (OpenCV, NumPy), để nhiều lượt chạy song song
+    không tranh nhau làm máy quá tải.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, OPENCV_NUM_THREADS=str(threads), OMP_NUM_THREADS=str(threads), OPENBLAS_NUM_THREADS=str(threads),
+               PYTHONUTF8="1")  # Windows: in tiếng Việt ra file log không bị lỗi mã hóa
     with (out_dir / "log.txt").open("w", encoding="utf-8") as log:
         subprocess.run([sys.executable, str(ROOT / "run.py"), "--scene", str(scene), "--out", str(out_dir),
-                        "--config", str(config_path)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+                        "--config", str(config_path)], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=False)
 
 
 def synthetic_scores(run_dir: Path, scenes: list[Path]) -> dict:
@@ -125,8 +132,9 @@ def main() -> None:
         (run_dir / "config.yaml").write_text(yaml.safe_dump(variant_config, allow_unicode=True, sort_keys=False), encoding="utf-8")
         jobs += [(run_dir / "config.yaml", scene, run_dir / scene.name) for scene in real + synthetic]
     print(f"{len(variants)} lượt × {len(real) + len(synthetic)} cảnh, kết quả ở {args.out}", flush=True)
+    threads = max(1, (os.cpu_count() or 1) // args.jobs)
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        list(pool.map(lambda job: run_scene(*job), jobs))
+        list(pool.map(lambda job: run_scene(*job, threads), jobs))
     table = []
     for index, (name, _) in enumerate(variants):
         run_dir = args.out / f"{index:02d}"
