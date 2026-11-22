@@ -69,6 +69,9 @@ detection:
   # Tốc độ MOG2 "quên" nền cũ, mỗi frame (0–1). Nền cần khoảng 1/rate frame để theo kịp thay đổi:
   # 0,001 ≈ 1000 frame ≈ 40 giây ở 25 fps. Nhanh quá thì người đứng yên bị nuốt vào nền (QĐ-28).
   mog2_learning_rate: 0.001
+  # Khởi động nhanh (QĐ-33): bấy nhiêu frame đầu MOG2 tự học nhanh để nhớ cảnh trống (50 frame = 2 giây ở 25 fps),
+  # sau đó mới học chậm theo mog2_learning_rate. 0 = tắt (khi đó vài giây đầu có rất nhiều khung ma).
+  mog2_warmup_frames: 50
   # Morphology: opening xóa chấm nhiễu; closing kernel dựng đứng [rộng, cao] nối thân với chân.
   open_kernel: [3, 3]
   open_iterations: 1

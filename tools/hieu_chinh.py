@@ -13,14 +13,13 @@ Cách dùng:
 - Cảnh CÓ đáp án (camera có gt_tracking.csv, do nhóm khoanh bằng tools/annotate.py): in MOTA, IDF1 trung bình
   các camera sau khi nối tracklet, và số người nhận dạng lại đúng (chỉ ngoại hình | ngoại hình + sàn).
   ĐIỂM = (MOTA + IDF1) / 2, càng cao càng tốt.
-- Cảnh CHƯA có đáp án: in số ID và số track mỗi frame của từng camera (số ID càng ít càng tốt nhưng
-  track mỗi frame không nên tụt, tụt là đang bỏ sót người).
+- Cảnh CHƯA có đáp án: in bài chấm không cần đáp án (QĐ-34, src/evaluation/khong_dap_an.py) cho từng camera:
+  số ID (ít là tốt), phủ người (cao là tốt), track ma (thấp là tốt), cú nhảy (thấp là tốt), track mỗi frame.
 Kết quả ghi vào outputs/hieu_chinh/<thời gian>/bang_diem.csv, kèm config của từng lượt.
 """
 from __future__ import annotations
 
 import argparse
-import collections
 import copy
 import csv
 import json
@@ -34,10 +33,10 @@ from pathlib import Path
 import yaml
 
 from src.common.utils import camera_video
+from tools.cham_khong_dap_an import score_scene
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENE_ROOT = ROOT / "data/canh"
-ACTIVE = ("confirmed", "merged", "static")
 
 
 def parse_set(text: str) -> tuple[str, list]:
@@ -113,20 +112,13 @@ def scored_metrics(run_dir: Path, scenes_with_answers: list[Path]) -> dict:
             "nhan_dang_lai": f"{reid}/{people} | {reid_floor}/{people}"}
 
 
-def id_counts(run_dir: Path, scene_list: list[Path]) -> dict:
-    """Số ID và số track mỗi frame (sau khi nối) của từng camera."""
+def no_answer_scores(run_dir: Path, scene_list: list[Path]) -> dict:
+    """Bài chấm không cần đáp án (QĐ-34) của từng camera: số ID, phủ người, track ma, cú nhảy."""
     result = {}
     for scene in scene_list:
-        for camera in ("cam_a", "cam_b"):
-            linked = run_dir / scene.name / camera / "tracks_linked.csv"
-            if not linked.exists():
-                continue
-            with linked.open(encoding="utf-8") as stream:
-                rows = list(csv.DictReader(stream))
-            frames = len({r["frame"] for r in rows}) or 1
-            active = [r for r in rows if r["state"] in ACTIVE]
-            ids = len(collections.Counter(r["track_id"] for r in active))
-            result[f"{scene.name}/{camera}"] = f"{ids} ID, {len(active) / frames:.2f} track/frame"
+        for camera, values in score_scene(run_dir / scene.name, scene).items():
+            result[f"{scene.name}/{camera}"] = (f"{values['so_id']} ID, phủ {values['phu_nguoi']:.2f}, ma {values['track_ma']:.2f}, "
+                                                f"nhảy {values['nhay']}, {values['track_moi_frame']} track/frame")
     return result
 
 
@@ -160,7 +152,7 @@ def main() -> None:
     for index, (name, _) in enumerate(variants):
         run_dir = args.out / f"{index:02d}"
         row = {"luot": name, **scored_metrics(run_dir, answered)}
-        row.update(id_counts(run_dir, all_scenes))
+        row.update(no_answer_scores(run_dir, all_scenes))
         table.append(row)
         print("  ".join(f"{k}={v}" for k, v in row.items()), flush=True)
     with (args.out / "bang_diem.csv").open("w", newline="", encoding="utf-8") as stream:

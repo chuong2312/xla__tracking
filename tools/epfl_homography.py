@@ -133,7 +133,12 @@ def main() -> None:
     data = {"H_ab": floor_to_floor(g_a, g_b).tolist(),
             "nguon": f"{args.calib.name}, camera {args.cam_a} → camera {args.cam_b} (H_AB = G_B⁻¹ · G_A)"}
     (args.scene / "homography.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"Đã ghi {args.scene / 'homography.json'}")
+    calibration = args.calib.resolve()
+    root = Path(__file__).resolve().parents[1]
+    info = {"hieu_chinh": calibration.relative_to(root).as_posix() if calibration.is_relative_to(root) else str(calibration),
+            "cam_a": args.cam_a, "cam_b": args.cam_b}
+    (args.scene / "camera.json").write_text(json.dumps(info, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Đã ghi {args.scene / 'homography.json'} và camera.json (file hiệu chỉnh, số camera)")
     if args.explain:
         explain(args.scene, g_a, g_b, args.explain, args.top_view)
         print(f"Đã ghi {args.explain}")

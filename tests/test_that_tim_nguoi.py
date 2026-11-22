@@ -49,3 +49,21 @@ def test_median_background_sees_nothing_in_the_empty_room(lab4p):
         if index >= 60:
             break
     assert np.mean(shares) <= 0.01
+
+
+def test_mog2_warmup_removes_ghosts_at_the_start(lab4p):
+    """Phòng còn trống ở 2 giây đầu. Có khởi động nhanh (QĐ-33): frame 10–50 gần như không có foreground
+    (đo được 0,01–0,02%). Không khởi động nhanh: khoảng 20% ảnh bị coi là chuyển động."""
+    from src.detect.background import Mog2Background
+    with_warmup = Mog2Background(CONFIG["detection"])
+    without = Mog2Background(dict(CONFIG["detection"], mog2_warmup_frames=0))
+    shares_with, shares_without = [], []
+    for index, frame in iter_video(camera_video(lab4p / "cam_a")):
+        a, b = with_warmup.apply(frame), without.apply(frame)
+        if index >= 10:
+            shares_with.append((a > 0).mean())
+            shares_without.append((b > 0).mean())
+        if index >= 50:
+            break
+    assert np.mean(shares_with) <= 0.002
+    assert np.mean(shares_without) >= 0.05

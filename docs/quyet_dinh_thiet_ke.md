@@ -404,3 +404,32 @@
   - Chế độ oracle của nhận dạng lại (`tools/run_reid.py`, `tools/explain_reid.py`) cần đáp án nên tạm chưa dùng được.
   - Không còn video thật nào có camera bị trôi, nên bước ổn định hình (QĐ-30) chỉ còn được kiểm tra bằng con số.
 - **Bước tiếp theo:** nhóm khoanh đáp án cho một đoạn video bằng `tools/annotate.py`, rồi hiệu chỉnh lại tham số theo điểm thật.
+
+## QĐ-33: Khởi động nhanh cho MOG2
+- **Trạng thái:** đã làm (2026-11-23), `detection.mog2_warmup_frames: 50`.
+- **Vấn đề:** MOG2 học nền chậm ngay từ frame đầu (`mog2_learning_rate` 0,001, QĐ-28). Nó chưa kịp nhớ căn phòng trống, nên trong 4 giây đầu khoảng 20% ảnh bị coi là chuyển động: khoảng 5 khung ma mỗi frame, và 101 tên ma ở camera 0.
+- **Quyết định:** trong 50 frame đầu (2 giây), MOG2 tự học nhanh (learningRate = −1); sau đó mới học chậm như cũ.
+- **Kết quả:**
+  - Phòng trống ở 2 giây đầu: phần ảnh bị coi là chuyển động giảm từ 18–20% xuống 0,01–0,09%.
+  - Số ID sau khi nối giảm 42 → 36 (camera 0) và 26 → 16 (camera 1).
+- **Điều kiện:** vài giây đầu video ít người đi qua (đã có trong hướng dẫn quay, `data/README.md`).
+
+## QĐ-34: Bài chấm không cần đáp án
+- **Trạng thái:** đã làm (2026-11-23), `src/evaluation/khong_dap_an.py`, `tools/cham_khong_dap_an.py`; `tools/hieu_chinh.py` in bài chấm này cho cảnh chưa có đáp án.
+- **Vấn đề:** video của nhóm chưa có đáp án. Nếu chỉ cố giảm số tên thì dễ "ăn gian": gộp nhầm nhiều người làm một cũng giảm số tên.
+- **Quyết định:** chấm cùng lúc nhiều chỉ số kéo nhau:
+  - số ID (ít là tốt);
+  - độ phủ người: khung cao đúng cỡ người theo hiệu chỉnh camera mà có track bám (cao là tốt);
+  - track ma (thấp là tốt);
+  - cú nhảy: track dời tâm hơn 0,5 lần chiều cao khung giữa hai frame, dấu hiệu tráo người (thấp là tốt);
+  - cỡ hợp lý.
+
+  Mỗi cảnh có `camera.json` ghi file hiệu chỉnh và số camera (do `tools/epfl_homography.py` ghi).
+- **Cách dùng khi cải thiện:** chỉnh trên cặp c0+c1, kiểm tra lại trên cặp c2+c3. Một thay đổi chỉ được giữ khi số ID giảm mà độ phủ không giảm, track ma và cú nhảy không tăng, và video debug không có lỗi mới.
+- **Giới hạn:** đây chỉ là thước đo thay thế. Điểm thật (MOTA, IDF1) cần nhóm khoanh đáp án.
+- **Mốc:** `outputs/hieu_chinh/00_moc_khoi_dong_nhanh/`.
+
+  | Cảnh / camera | Số ID | Độ phủ | Track ma | Cú nhảy |
+  |---|---|---|---|---|
+  | c0+c1 A / B | 36 / 16 | 0,91 / 0,93 | 0,03 / 0,02 | 4 / 5 |
+  | c2+c3 A / B | 55 / 81 | 0,89 / 0,87 | 0,05 / 0,07 | 3 / 3 |
