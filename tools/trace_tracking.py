@@ -6,7 +6,6 @@ import csv
 import hashlib
 import json
 import logging
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -51,7 +50,7 @@ def collect_provenance_files(
     video_path: str | Path,
     gt_path: str | Path,
 ) -> list[dict[str, Any]]:
-    """Hash source, config, tests và toàn bộ synthetic input cùng scenario."""
+    """Hash source, config, tests, video đầu vào và đáp án."""
     root = Path(repo_root).resolve()
     config = Path(config_path).resolve()
     video = Path(video_path).resolve()
@@ -66,7 +65,6 @@ def collect_provenance_files(
     add(config, "config")
     add(root / "legacy/run_tracking.py", "source")
     add(root / "tools" / "trace_tracking.py", "source")
-    add(root / "tools" / "make_synthetic.py", "synthetic_generator")
     for directory, role in ((root / "src", "source"), (root / "legacy", "source"), (root / "tests", "test")):
         if directory.exists():
             for path in directory.rglob("*.py"):
@@ -74,17 +72,6 @@ def collect_provenance_files(
 
     add(video, "input_video")
     add(gt, "ground_truth")
-    try:
-        common = Path(os.path.commonpath([video.parent, gt.parent]))
-        common.relative_to((root / "data" / "synthetic").resolve())
-        if common.is_dir():
-            for path in common.rglob("*"):
-                if path.is_file():
-                    add(path, "synthetic_input")
-    except ValueError:
-        pass
-    metadata = video.parent / "metadata.json"
-    add(metadata, "input_metadata")
 
     records = []
     for path in sorted(roles, key=lambda value: str(value)):
@@ -127,13 +114,6 @@ def build_run_manifest(
     status = _git_value(root, "status", "--porcelain")
     diff = _git_value(root, "diff", "--binary") or ""
     staged_diff = _git_value(root, "diff", "--cached", "--binary") or ""
-    metadata_path = video.parent / "metadata.json"
-    metadata: dict[str, Any] = {}
-    if metadata_path.is_file():
-        try:
-            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            metadata = {}
     try:
         video_name = video.relative_to(root).as_posix()
     except ValueError:
@@ -153,10 +133,6 @@ def build_run_manifest(
         "input_provenance": {
             "video": video_name,
             "ground_truth": gt_name,
-            "scenario": metadata.get("scenario"),
-            "synthetic": metadata.get("synthetic"),
-            "random_seed": metadata.get("seed"),
-            "seed_scope": "synthetic_generator" if metadata.get("seed") is not None else None,
         },
         "software": {
             "python": sys.version.split()[0],

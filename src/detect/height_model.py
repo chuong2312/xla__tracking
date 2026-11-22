@@ -19,6 +19,10 @@ chân càng thấp trong ảnh và người càng cao. Gần đúng:
        b = trung vị của (h_i − a · y_i)
    Khoảng ở sát mép ảnh có người bị cắt mất chân, cho điểm thấp bất thường; bình phương tối
    thiểu bị một điểm như vậy kéo lệch cả đường, còn trung vị thì không.
+4. Kiểm tra đường có khớp không: độ lệch tương đối r = trung vị(|h_i − (a·y_i + b)| / h_i).
+   r > `max_residual` nghĩa là video không hợp giả định "sàn phẳng, camera nhìn xuống" (ví dụ quay
+   giếng trời nhiều tầng: người ở tầng trên vừa cao hơn trong ảnh vừa nhỏ hơn). Khi đó không dùng
+   mô hình (trả về None), để không chặn nhầm người thật. Đo được: video hợp giả định 1–11%, S1 22%.
 """
 from __future__ import annotations
 
@@ -37,6 +41,7 @@ class HeightModel:
     a: float
     b: float
     points: list[tuple[float, float]]
+    residual: float = 0.0
 
     def expected(self, foot_y: float) -> float:
         """Chiều cao người mong đợi (pixel) khi chân ở hàng `foot_y`; không nhỏ hơn 1."""
@@ -65,15 +70,25 @@ def theil_sen(points: Sequence[tuple[float, float]]) -> tuple[float, float]:
     return a, b
 
 
+def relative_residual(points: Sequence[tuple[float, float]], a: float, b: float) -> float:
+    """Trung vị của |h − (a·y + b)| / h trên các điểm: đường thẳng khớp các điểm tới đâu."""
+    return float(np.median([abs(h - (a * y + b)) / max(h, 1.0) for y, h in points]))
+
+
 def fit_height_model(boxes: Sequence[Sequence[int]], cfg: Mapping) -> HeightModel | None:
-    """Kẻ đường Theil–Sen qua các điểm phân vị; None nếu có ít hơn 3 điểm hoặc độ dốc âm (vô lý)."""
+    """Kẻ đường Theil–Sen qua các điểm phân vị.
+
+    None (không dùng mô hình) nếu có ít hơn 3 điểm, độ dốc âm (vô lý), hoặc đường không khớp các
+    điểm (độ lệch tương đối > max_residual).
+    """
     points = envelope_points(boxes, cfg)
     if len(points) < 3:
         return None
     a, b = theil_sen(points)
-    if a <= 0:
+    residual = relative_residual(points, a, b)
+    if a <= 0 or residual > float(cfg["max_residual"]):
         return None
-    return HeightModel(float(a), float(b), points)
+    return HeightModel(float(a), float(b), points, residual)
 
 
 def tall_enough(box: Sequence[float], model: HeightModel, min_ratio: float, image_shape: tuple[int, int], border_px: float) -> bool:
@@ -91,10 +106,11 @@ def tall_enough(box: Sequence[float], model: HeightModel, min_ratio: float, imag
 
 def save(model: HeightModel, path: Path) -> None:
     """Ghi mô hình ra JSON để xem lại và giải thích."""
-    path.write_text(json.dumps({"a": model.a, "b": model.b, "points": model.points}, indent=2), encoding="utf-8")
+    data = {"a": model.a, "b": model.b, "do_lech_tuong_doi": model.residual, "points": model.points}
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def load(path: Path) -> HeightModel:
     """Đọc mô hình từ JSON."""
     data = json.loads(path.read_text(encoding="utf-8"))
-    return HeightModel(float(data["a"]), float(data["b"]), [tuple(p) for p in data["points"]])
+    return HeightModel(float(data["a"]), float(data["b"]), [tuple(p) for p in data["points"]], float(data.get("do_lech_tuong_doi", 0.0)))

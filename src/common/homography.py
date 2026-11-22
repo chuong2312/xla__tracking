@@ -63,6 +63,12 @@ def save(path: str | Path, H: np.ndarray, points_a, points_b, image_size: Sequen
     Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def scene_homography(scene_dir: str | Path) -> np.ndarray | None:
+    """Homography sàn A → B của một cảnh (file homography.json trong thư mục cảnh); None nếu không có."""
+    path = Path(scene_dir) / "homography.json"
+    return load(path)["H_ab"] if path.exists() else None
+
+
 def load(path: str | Path) -> dict:
     """Đọc file JSON đã lưu; trường H_ab được đổi lại thành mảng numpy 3×3."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))

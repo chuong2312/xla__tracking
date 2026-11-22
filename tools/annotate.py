@@ -1,7 +1,7 @@
 """Công cụ gán nhãn đáp án (ground truth) bằng tay trên video.
 
 Cách dùng:
-    python tools/annotate.py --video <video> --out <gt.csv> [--step 5] [--size 640 360]
+    python tools/annotate.py --video <video> --out <gt.csv> [--step 5] [--size RỘNG CAO]
 
 Thao tác trong cửa sổ:
 - Kéo chuột: vẽ một box đang chờ gán ID.
@@ -29,8 +29,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from legacy.config import load_config  # noqa: E402
-from src.common.utils import iter_video  # noqa: E402
+from src.common.utils import iter_video, video_size  # noqa: E402
 
 Box = tuple[int, int, int, int]
 GtRow = tuple[int, int, int, int, int, int, int, int]
@@ -191,11 +190,10 @@ def main() -> None:
     parser.add_argument("--video", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--step", type=int, help="khoảng cách giữa hai keyframe (frame)")
-    parser.add_argument("--size", nargs=2, type=int, metavar=("WIDTH", "HEIGHT"))
-    parser.add_argument("--config", default=str(PROJECT_ROOT / "config.yaml"))
+    parser.add_argument("--size", nargs=2, type=int, metavar=("WIDTH", "HEIGHT"),
+                        help="đổi cỡ ảnh (mặc định: giữ cỡ gốc của video, đúng với hệ thống mới)")
     args = parser.parse_args()
-    cfg = load_config(args.config)
-    size = tuple(args.size) if args.size else (cfg.scene.resize_width, cfg.scene.resize_height)
+    size = tuple(args.size) if args.size else video_size(args.video)
     step = args.step if args.step is not None else 5
     if step <= 0:
         raise ValueError("--step phải dương")

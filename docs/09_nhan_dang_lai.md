@@ -29,16 +29,18 @@ Mỗi camera tự đặt số cho từng người. Bước này trả lời: **n
 - Điểm vị trí sàn = trung bình `exp(−d² / 2σ²)`, với d là khoảng cách (pixel) giữa chân đã quy đổi và chân thật, σ = 25 px.
 - Điểm tổng = `(0,4·keypoint + 0,4·màu + 0,2·sàn) / tổng trọng số của các điểm đang có`.
 
-## Kết quả trên video tổng hợp (chế độ oracle: dùng khung đáp án)
+## Trên video của nhóm (QĐ-32)
 
-| Kịch bản (hành lang, QĐ-22) | Chỉ ngoại hình | Ngoại hình + sàn |
-|---|---|---|
-| `s1`–`s5` | 4/4 | 4/4 |
-| riêng `s4` (người 1 và 2 mặc giống hệt): rank-1 | 3/4 | 4/4 |
+Chế độ oracle (dùng khung đáp án làm track) cần đáp án. Bộ video EPFL 4 người chưa có đáp án, nên **chưa có số
+người ghép đúng**. Đo được trên video, camera 0:
+- **Màu áo:** cùng một người cách vài frame giống 0,82 và 0,86. Hai người khác nhau giống 0,64 (cả hai mặc áo đen)
+  và 0,48. Màu phân biệt được người mặc khác màu, nhưng kém khi hai người cùng tông màu.
+- **Điểm đặc trưng SIFT:** cùng một người cách 5–10 frame chỉ có **6–9 cặp khớp tốt**, điểm keypoint 0,20–0,30. Ảnh
+  360×288 có ít chi tiết, nên phần keypoint yếu.
+- Toàn hệ thống ghép được 20 cặp (c0 + c1) và 21 cặp (c2 + c3), nhưng chưa có đáp án để biết cặp nào đúng.
 
-Ở `s4`, điểm keypoint và điểm màu của người 1 và người 2 gần như hòa nhau, nên rank-1 chỉ ngoại hình còn 3/4. Vị trí sàn tách được hai người. Ở bố trí sàn cũ (trước QĐ-22), "chỉ ngoại hình" của `s4` còn tụt xuống 2/4. Đây là lý do phải báo cáo riêng hai kết quả: để thấy rõ phần nào làm được việc gì.
-
-**Đừng báo cáo con số 4/4 này như kết quả thật.** Video tổng hợp quá dễ: hai camera vẽ cùng một hoa văn, không có góc nghiêng thật, không đổi ánh sáng.
+Vì ngoại hình yếu, **vị trí trên sàn** có thể là thông tin quan trọng nhất khi ghép hai camera. Điều này cần kiểm
+chứng khi có đáp án. Hai kết quả "chỉ ngoại hình" và "ngoại hình + sàn" luôn được báo cáo riêng.
 
 ## Tham số (`config.yaml`, section `reid`)
 
@@ -51,28 +53,18 @@ Mỗi camera tự đặt số cho từng người. Bước này trả lời: **n
 | `geo_sigma_px` (25) | Độ lệch cho phép của vị trí sàn |
 | `weight_feature`, `weight_color`, `weight_geometry` | Trọng số khi gộp điểm |
 
-Ngưỡng 0,3 được chọn trên video tổng hợp: cùng người có điểm 0,42–0,94, khác người tối đa 0,14. **Phải hiệu chỉnh lại trên video dev thật.**
+Ngưỡng 0,3 và các trọng số là giá trị cũ, chọn trước QĐ-31, nên **phải hiệu chỉnh lại khi video của nhóm có đáp án** ([14](14_hieu_chinh_tham_so.md)).
 
 ## Chạy thử
 
 ```bash
-python -m tools.run_reid --scene data/synthetic_v2/s4              # in số cặp đúng, rank-1, bảng điểm
-python -m tools.run_reid --scene data/synthetic_v2/s4 --method orb # thử phương pháp khác
-python -m tools.explain_reid --scene data/synthetic_v2/s4 --person 3
+# Cần cảnh CÓ ĐÁP ÁN (cam_a/gt_tracking.csv, cam_b/gt_tracking.csv, gt_reid.csv), xem [15](15_du_lieu_that_va_dap_an.md)
+python -m tools.run_reid --scene data/canh/<cảnh có đáp án>                # in số cặp đúng, rank-1, bảng điểm
+python -m tools.run_reid --scene data/canh/<cảnh có đáp án> --method orb   # thử phương pháp khác
+python -m tools.explain_reid --scene data/canh/<cảnh có đáp án> --person 1
 ```
 
-Ảnh `outputs/explain/nhan_dang_lai/s4_bang_diem.png` có 5 bảng điểm: viền đỏ là cặp đúng, viền xanh đứt là cặp chương trình chọn. Ảnh `s4_nguoi3_khop.png` nối các cặp keypoint khớp tốt; các đường gần như nằm ngang chính là nhờ ràng buộc dọc.
+Ảnh trong `outputs/explain/nhan_dang_lai/` gồm 5 bảng điểm: viền đỏ là cặp đúng, viền xanh đứt là cặp chương trình chọn.
+Ảnh nối cặp keypoint cho thấy các cặp khớp tốt; các đường gần như nằm ngang là nhờ ràng buộc dọc.
 
-Hiện mới có **chế độ oracle**, tức dùng khung đáp án. Chế độ end-to-end (dùng track thật) sẽ làm khi tracker mới xong (giai đoạn 2).
-
-## Khi nào hỏng
-
-- **Hai người mặc giống nhau:** cần vị trí sàn.
-- **Hai camera lệch góc lớn:** thấy hai mặt khác nhau, keypoint khớp kém. Thử ASIFT.
-- **Ánh sáng hai camera rất khác:** màu lệch dù đã cân bằng gray-world.
-- **Tracker cắt một người thành nhiều track:** cần nối các đoạn track trước khi ghép (XLA 2.10, làm ở giai đoạn sau).
-
-## Thầy có thể hỏi
-
-- *"Làm sao biết người ở camera A là ai ở camera B?"* So ba loại điểm (keypoint, màu, vị trí sàn), gộp lại, rồi ghép một-một bằng Hungarian; cặp điểm thấp thì để "không khớp ai".
-- *"Vì sao báo cáo hai kết quả riêng?"* Vị trí sàn rất mạnh nhưng chỉ là bổ trợ và có thể sai. Báo riêng kết quả "chỉ ngoại hình" để chứng minh phần nhận dạng bằng đặc trưng ảnh làm được đến đâu.
+Toàn hệ thống (dùng track thật thay cho khung đáp án) chạy bằng `run.py`; kết quả ở [12](12_he_thong.md).

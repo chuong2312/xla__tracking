@@ -146,7 +146,7 @@
   - `detection_pr` chỉ chấm frame mà mọi box đều gán tay và không box nào bị che nặng.
   - File đáp án cũ (không có hai cột này) vẫn đọc và chấm được như trước.
 
-## QĐ-16: Video tổng hợp v2 vẽ theo tọa độ sàn và homography *(bố trí đổi theo QĐ-22)*
+## QĐ-16: Video tổng hợp v2 vẽ theo tọa độ sàn và homography *(ĐÃ BỎ theo QĐ-31: chỉ dùng video thật)*
 - **Trạng thái:** đã làm (2026-11-21).
 - **Bối cảnh:** chưa có video thật. Video tổng hợp cũ chỉ có đáp án cho một camera, các hộp màu trên nền phẳng, và chỉ 3 "người".
 - **Quyết định:**
@@ -216,7 +216,7 @@
 - **Rủi ro:** ngày 2026-11-21 thầy đã trả lời rằng đếm VÀO/RA là **bắt buộc** (câu 6 trong [cau_hoi_thay.md](cau_hoi_thay.md)). Bỏ phần này là trái yêu cầu đó. **Nhóm cần trao đổi lại với thầy.**
 - **Lấy lại khi cần:** toàn bộ code, test và tài liệu của phần cửa còn trong commit `827121c` trên nhánh `redesign`.
 
-## QĐ-22: Chỉ một bố trí: hành lang, hai camera ở cùng một đầu
+## QĐ-22: Chỉ một bố trí: hành lang, hai camera ở cùng một đầu *(phần video máy vẽ ĐÃ BỎ theo QĐ-31; bố trí vẫn dùng cho kế hoạch quay)*
 - **Trạng thái:** đã làm (nhóm chốt, 2026-11-22).
 - **Quyết định:**
   - Hành lang rộng 3 m, dài 10 m.
@@ -319,7 +319,7 @@
 - **Đã thử và bỏ:** trừ nền trung vị có cập nhật chọn lọc trên EPFL: 14–20% ảnh bị coi là foreground (báo nhầm nhiều).
 - **Rủi ro:** khi ánh sáng thay đổi nhanh (bật đèn, mây che nắng qua cửa sổ), nền theo không kịp và báo nhầm cả mảng lớn trong vài chục giây.
 
-## QĐ-29: Áp dụng kết quả hai vòng hiệu chỉnh tham số
+## QĐ-29: Áp dụng kết quả hai vòng hiệu chỉnh tham số *(chấm chủ yếu trên video máy vẽ; phải làm lại trên video thật, QĐ-31)*
 - **Trạng thái:** đã làm (2026-11-22), bằng `tools/hieu_chinh.py`. Chi tiết từng lượt ở [14](14_hieu_chinh_tham_so.md).
 - **Cách làm:** mỗi vòng đổi riêng từng tham số (2 giá trị quanh giá trị đang dùng). Một giá trị chỉ được giữ khi **cả hai** điều kiện đúng:
   - điểm trên 5 cảnh tổng hợp, `(MOTA + IDF1) / 2`, không giảm, và nhận dạng lại không giảm;
@@ -347,3 +347,60 @@
 - **Đã thử nhưng không giữ** (điểm tổng hợp tăng nhưng nhận dạng lại giảm 20/20 → 18/20): `mog2_var_threshold` 30, `merge_max_frames` 60, `kalman.acceleration_std_px` 0,2.
 - **Để ngỏ** (tổng hợp không đổi, EPFL ít ID hơn, nhưng chưa kiểm chứng được là đúng hay chỉ là gộp nhầm): `mog2_learning_rate` 0,0005, `confirm_hits` 4, `tracklet_linking.max_cost` 1,6.
 - **Rủi ro:** chỉnh trên 5 cảnh tổng hợp và một video thật; với video khác (ánh sáng, góc quay khác) có thể phải chỉnh lại.
+
+## QĐ-30: Ổn định hình trước khi tìm người; chỉ dùng mô hình chiều cao khi nó khớp
+- **Trạng thái:** đã làm (2026-11-22), `src/detect/stabilization.py`, `src/detect/height_model.py`.
+- **Bối cảnh:** chạy hệ thống trên **mọi** video thật trong `data/real`, không chỉ EPFL c0+c1:
+  - `dev/S1` (giếng trời nhiều tầng, 1024×576, 18 giây, một camera): 48 ID, khoảng 10 khung mỗi frame. So với frame đầu, khung hình **trôi dần tới khoảng 40 px** (đo bằng tương quan pha), dù giữa hai frame liền nhau chỉ trôi khoảng 0,15 px. Mép cửa sổ, cột, lan can bị coi là "đang chuyển động".
+  - Mô hình chiều cao của S1 không khớp: người ở nhiều tầng nên "chân càng thấp thì người càng cao" sai. Mô hình đoán người cao 95–111 px trong khi người thật cao khoảng 52 px, nên khung người thật bị chặn, không được tạo track (QĐ-27).
+- **Quyết định:**
+  1. **Ổn định hình** (`stabilization`): bám các điểm góc của frame đầu sang frame hiện tại bằng Lucas-Kanade, ước lượng phép dời + xoay + co giãn đều bằng RANSAC (`cv2.estimateAffinePartial2D`; điểm trên người đang đi bị loại vì không theo chuyển động chung), rồi đưa frame về tọa độ frame đầu. Góc ảnh dời dưới 1 px thì giữ nguyên frame. Box ghi ra file được đổi ngược về tọa độ video gốc.
+  2. **Kiểm tra mô hình chiều cao:** độ lệch tương đối trung vị của các điểm so với đường thẳng > 15% (`height_model.max_residual`) thì không dùng mô hình. Đo được: video hợp giả định 1–11%, S1 22%.
+- **Kết quả** (`outputs/hieu_chinh/05_on_dinh_hinh/`):
+
+  | | Không ổn định hình | Có ổn định hình |
+  |---|---|---|
+  | S1: foreground (frame 300) | 9,8% ảnh | 1,3% ảnh |
+  | S1: số ID / track mỗi frame | 66 / 11,7 | **22 / 3,1** |
+  | 5 cảnh tổng hợp | 0,825, 20/20 | 0,825, 20/20 (không đổi) |
+  | EPFL c0+c1, c2+c3 (camera cố định) | 34/31, 63/89 ID | 34/31, 62/89 ID (không đổi) |
+- **Không phải học máy:** Lucas-Kanade, RANSAC và phép biến đổi affine đều là xử lý ảnh / ước lượng cổ điển.
+- **Ghi chú (QĐ-32):** video S1 dùng để đo ở trên đã bị xóa theo yêu cầu của nhóm. Hiện không còn video thật nào bị trôi để kiểm tra lại.
+- **Còn lại ở S1 (lúc đo):** phản chiếu trên kính cửa sổ vẫn sinh vài khung nhầm. Ổn định hình chỉ bù được camera trôi chậm hoặc rung nhẹ; camera quay theo người (lia máy) thì nền thay đổi hẳn, cách trừ nền không dùng được.
+
+## QĐ-31: Chỉ dùng video thật; xóa toàn bộ video và hình máy vẽ *(phần dữ liệu EPFL tải thêm đã bỏ theo QĐ-32)*
+- **Trạng thái:** đã làm (2026-11-23). Đây là **quy tắc bắt buộc** của nhóm.
+- **Quyết định:**
+  - Không dùng ảnh hay video do máy vẽ cho **bất cứ việc gì**: chấm điểm, hiệu chỉnh tham số, test, minh họa, báo cáo.
+  - Đã xóa video máy vẽ (`data/synthetic`, `data/synthetic_v2`), 5 công cụ sinh video, các test và tài liệu dựa trên chúng (`docs/01_video_tong_hop.md`). Các file này vẫn còn trong lịch sử git nếu cần tra lại.
+  - **Test có hình ảnh** chạy trên video thật (EPFL, S1). **Test chỉ có con số** (tọa độ khung, ma trận chi phí, công thức) giữ nguyên, vì không phải hình ảnh. Máy thiếu dữ liệu thì test cần video tự bỏ qua kèm lời nhắc.
+- **Dữ liệu:** lúc đầu nhóm tải thêm hai bộ EPFL có đáp án (phòng thí nghiệm 6 người, lối đi ngầm) để chấm điểm.
+  Theo QĐ-32, hai bộ này và video S1 đã bị xóa; dự án chỉ dùng video do nhóm đưa. Các con số đo trên hai bộ đó
+  không còn dùng.
+- **Phát hiện vẫn đúng với video của nhóm** (cùng cỡ ảnh 360×288):
+  - Hệ thống trên video thật yếu hơn nhiều so với con số trên video máy vẽ trước đây.
+  - Điểm đặc trưng SIFT khớp ít, màu áo phân biệt kém khi người cùng tông màu.
+  - Các ngưỡng chọn trên video máy vẽ (`reid.match_threshold`, `tracklet_linking.min_color_similarity`…) phải hiệu chỉnh lại trên video thật có đáp án.
+- **Hệ quả:** các quyết định hiệu chỉnh trước đây (QĐ-25 … QĐ-29) có phần dựa trên điểm video máy vẽ, nên phải
+  hiệu chỉnh lại khi video của nhóm có đáp án.
+
+## QĐ-32: Chỉ dùng video do nhóm đưa
+- **Trạng thái:** đã làm (2026-11-23), theo yêu cầu của nhóm.
+- **Quyết định:**
+  - Dự án chỉ dùng video thật **do nhóm đưa**. Hiện là bộ EPFL phòng thí nghiệm 4 người: 4 file avi gốc, 4 camera, mỗi file 3915 frame.
+  - Đã xóa:
+    - hai bộ EPFL tải thêm (phòng thí nghiệm 6 người, lối đi ngầm), kèm đáp án, file hiệu chỉnh và các cảnh của chúng;
+    - video S1;
+    - bản mp4 cũ của bộ 4 người, vì đã thay bằng bản avi gốc nhóm đưa;
+    - công cụ đổi đáp án EPFL (`tools/epfl_dap_an.py`).
+  - Không tự tải thêm video hay bộ dữ liệu nào nếu nhóm không yêu cầu.
+- **Hệ quả:**
+  - **Chưa có video nào có đáp án**, nên chưa tính được MOTA, IDF1 hay số người ghép đúng; hệ thống chỉ đếm được số ID và số track ([12](12_he_thong.md)).
+  - Test tự động chạy trên 4 video của nhóm và kiểm tra những thứ không cần đáp án ([15](15_du_lieu_that_va_dap_an.md)):
+    - khung đúng cỡ người theo hiệu chỉnh camera (trung vị 0,90);
+    - số tên thừa (7 tên trong 1000 frame đầu);
+    - màu áo cùng người giống hơn khác người;
+    - …
+  - Chế độ oracle của nhận dạng lại (`tools/run_reid.py`, `tools/explain_reid.py`) cần đáp án nên tạm chưa dùng được.
+  - Không còn video thật nào có camera bị trôi, nên bước ổn định hình (QĐ-30) chỉ còn được kiểm tra bằng con số.
+- **Bước tiếp theo:** nhóm khoanh đáp án cho một đoạn video bằng `tools/annotate.py`, rồi hiệu chỉnh lại tham số theo điểm thật.

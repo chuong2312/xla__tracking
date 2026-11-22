@@ -34,20 +34,20 @@ Cặp nào qua cả 3 điều kiện thì được tính chi phí. Hungarian gh�
 | `min_color_similarity` | 0,5 | Độ giống màu tối thiểu |
 | `weight_motion`, `weight_color`, `max_cost` | 0,5; 0,5; 1,0 | Trọng số và chi phí tối đa |
 
-### Hiệu chỉnh bằng quét lưới (10 lượt chạy: 5 cảnh hành lang × 2 camera)
+Bảng trên ghi giá trị lúc viết tài liệu. Giá trị đang dùng nằm trong `config.yaml` (`tracklet_linking`), và đã được
+đổi ở QĐ-29 (`min_color_similarity` 0,3, `max_cost` 1,3).
 
-| Cấu hình | IDF1 trung bình | Tổng số lần đổi tên nhầm | Số lần nối |
-|---|---|---|---|
-| Không nối | 0,783 | 13 | 0 |
-| Khoảng hở 60, khoảng cách 1,5 | 0,788 | 12 | 1 |
-| Khoảng hở 120, khoảng cách 1,5 | 0,788 | 12 | 1 |
-| **Khoảng hở 120, khoảng cách 3 (chọn)** | **0,796** | **11** | 2 |
+### Trên video của nhóm (QĐ-32)
 
-Bước nối giúp được, nhưng **ít**: trong hành lang, lỗi chính là **tráo tên** (cả hai track vẫn sống, chỉ đổi người), không phải track bị **đứt**. Muốn sửa tráo tên thì phải sửa ở tracker ([11](11_tracker_moi.md)).
+Video EPFL 4 người chưa có đáp án, nên chưa đo được IDF1 trước và sau khi nối. Đếm được thì bước nối gộp khoảng
+một nửa số đoạn track. Số ID mỗi camera trước → sau khi nối: 95 → 42 và 81 → 26 (c0 + c1), 111 → 56 và 156 → 75
+(c2 + c3). Chưa biết có đoạn nào bị nối nhầm người hay không. Ngưỡng màu đang dùng (0,3) là giá trị cũ. Đo trên
+video, cùng người giống màu 0,82–0,86, hai người khác nhau 0,48–0,64, nên ngưỡng 0,3 có thể quá dễ dãi. **Cần hiệu
+chỉnh lại khi có đáp án** ([14](14_hieu_chinh_tham_so.md)).
 
 ## Khi nào hỏng
 
-- **Hai người mặc giống nhau:** màu không phân biệt được, dễ nối nhầm người.
+- **Hai người mặc giống nhau hoặc cùng tông màu:** màu không phân biệt được, dễ nối nhầm người (video của nhóm có hai người cùng mặc áo đen, độ giống màu 0,64).
 - **Người đổi hướng trong lúc bị mất dấu:** vị trí đoán theo vận tốc cũ bị lệch.
 - **Tráo tên:** bước này không sửa được, vì không có đoạn nào bị đứt.
 

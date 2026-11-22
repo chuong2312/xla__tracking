@@ -4,7 +4,7 @@ import numpy as np
 from src.detect.detection import group_vertical_pieces
 from src.detect.height_model import HeightModel, fit_height_model, theil_sen
 
-CFG = {"bin_px": 20, "quantile": 90, "min_count": 5}
+CFG = {"bin_px": 20, "quantile": 90, "min_count": 5, "max_residual": 0.15}
 
 
 def test_fit_recovers_line_from_whole_people_and_fragments():
@@ -56,14 +56,21 @@ def test_tall_enough_accepts_short_box_at_image_border():
     assert tall_enough((100, 250, 25, 38), heights, 0.6, (288, 360), 5)  # đáy box chạm mép dưới
 
 
-def test_tracker_does_not_start_track_from_fragment():
-    import numpy as np
-    import yaml
+def test_tracker_does_not_start_track_from_fragment(lab4p):
+    """Trên một frame thật: khung đủ cao một người được tạo track, khung chỉ cao như cái đầu thì không."""
+    from du_lieu_that import CONFIG, read_frame
     from src.tracking.people_tracker import PeopleTracker
-    cfg = yaml.safe_load(open("config.yaml", encoding="utf-8"))
     heights = HeightModel(a=0.5, b=0.0, points=[])
-    tracker = PeopleTracker(cfg["people_tracker"], cfg["kalman"], cfg["features"], heights=heights)
-    frame = np.random.default_rng(0).integers(0, 255, (288, 360, 3), dtype=np.uint8)
+    tracker = PeopleTracker(CONFIG["people_tracker"], CONFIG["kalman"], CONFIG["features"], heights=heights)
     whole, fragment = (50, 100, 25, 100), (200, 160, 25, 40)
-    tracks = tracker.update(frame, [whole, fragment], None)
+    tracks = tracker.update(read_frame(lab4p, "cam_a", 700), [whole, fragment], None)
     assert [t.box for t in tracks] == [whole]
+
+
+def test_fit_rejects_scene_where_height_does_not_follow_foot_position():
+    rng = np.random.default_rng(1)
+    boxes = []
+    for foot in rng.uniform(100, 300, 400):
+        height = 60.0 if (foot // 40) % 2 == 0 else 120.0  # nhiều tầng: chiều cao nhảy lên xuống
+        boxes.append((0, int(foot - height), 10, int(height)))
+    assert fit_height_model(boxes, CFG) is None

@@ -1,7 +1,7 @@
 """Ảnh minh họa cho mô hình chiều cao người và việc gộp mảnh (src/detect/height_model.py, QĐ-26).
 
 Cách dùng:
-    python -m tools.explain_height_model --video data/real/epfl/4p-c1.mp4 --frame 1800 --out outputs/explain/chieu_cao
+    python -m tools.explain_height_model --video data/canh/epfl_lab4p_c0_c1/cam_b/video.avi --frame 1800 --out outputs/explain/chieu_cao
 
 Ghi ra hai ảnh:
 1. `1_mo_hinh_chieu_cao.png`: mỗi chấm là một box tìm được (vị trí chân, chiều cao). Chấm đỏ
@@ -82,7 +82,7 @@ def draw_frame(video: Path, config: dict, model, frame_index: int, out: Path) ->
 def main() -> None:
     """Đọc tham số và ghi hai ảnh minh họa."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--video", type=Path, default=PROJECT_ROOT / "data/real/epfl/4p-c1.mp4")
+    parser.add_argument("--video", type=Path, default=PROJECT_ROOT / "data/canh/epfl_lab4p_c0_c1/cam_b/video.avi")
     parser.add_argument("--frame", type=int, default=1800)
     parser.add_argument("--out", type=Path, default=PROJECT_ROOT / "outputs/explain/chieu_cao")
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "config.yaml")

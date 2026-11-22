@@ -6,11 +6,13 @@
 
 ## 1. Chấm điểm sau khi sửa config
 
+Chỉ chấm trên **video thật** (QĐ-31): mọi cảnh trong `data/canh/` ([data/README.md](../data/README.md)).
+
 ```bash
-python -m tools.hieu_chinh                    # chấm config.yaml hiện tại (~3 phút)
-python -m tools.hieu_chinh --no-real          # bỏ video thật, nhanh hơn (~1 phút)
-python -m tools.hieu_chinh --set "people_tracker.max_misses=[5, 10, 20]"     # thử nhiều giá trị một lúc
-python -m tools.hieu_chinh --set "detection.min_area=[150, 300]" --set "people_tracker.iou_gate=[0.1, 0.2]"
+python -m tools.hieu_chinh                    # chấm config.yaml hiện tại trên mọi cảnh (khoảng 5–10 phút)
+python -m tools.hieu_chinh --chi-dap-an       # chỉ các cảnh có đáp án, nhanh hơn
+python -m tools.hieu_chinh --set "people_tracker.max_misses=[2, 3, 5]"      # thử nhiều giá trị một lúc
+python -m tools.hieu_chinh --set "reid.match_threshold=[0.1, 0.2]" --set "tracklet_linking.min_color_similarity=[0.5, 0.6]"
 ```
 
 - Mỗi `--set` được thử **riêng**: chỉ đổi đúng tham số đó, các tham số khác giữ như `config.yaml`. Luôn có thêm lượt `hien_tai` để so.
@@ -20,25 +22,34 @@ python -m tools.hieu_chinh --set "detection.min_area=[150, 300]" --set "people_t
 
 | Cột | Nghĩa | Tốt khi |
 |---|---|---|
-| `MOTA` | Trung bình 10 camera của 5 cảnh tổng hợp: khoanh đúng người được bao nhiêu (trừ đi bỏ sót, báo nhầm, đổi tên) | cao |
+| `MOTA` | Trung bình các camera của **cảnh có đáp án** (nhóm khoanh bằng `tools/annotate.py`; hiện chưa có): khoanh đúng người được bao nhiêu, đã trừ bỏ sót, báo nhầm và đổi tên | cao |
 | `IDF1` | Giữ đúng tên được bao lâu | cao |
 | `DIEM` | (MOTA + IDF1) / 2, **con số chính để so** | cao |
-| `nhan_dang_lai` | Số người ghép đúng giữa 2 camera trên 20 người (5 cảnh × 4): chỉ ngoại hình \| ngoại hình + sàn | cao |
-| `epfl…/cam_a`, `cam_b` | Video thật, chưa có đáp án: số ID và số track mỗi frame | ít ID; số track mỗi frame **không tụt mạnh** (tụt = đang bỏ sót người) |
+| `nhan_dang_lai` | Số người ghép đúng giữa 2 camera, cộng mọi cảnh có đáp án: chỉ ngoại hình \| ngoại hình + sàn | cao |
+| `<cảnh>/cam_a`, `cam_b` | Mọi cảnh (kể cả cảnh chưa có đáp án): số ID và số track mỗi frame | ít ID; số track mỗi frame **không tụt mạnh** (tụt là đang bỏ sót người) |
 
 ## 2. Quy trình nên làm
 
 1. Đổi **một** tham số (dùng `--set` với 2–3 giá trị quanh giá trị hiện tại).
-2. Giữ giá trị mới khi `DIEM` tăng **và** video thật không xấu đi (số ID không tăng nhiều, track mỗi frame không tụt).
+2. Giữ giá trị mới khi `DIEM` tăng, nhận dạng lại không giảm, và các cảnh chưa có đáp án không xấu đi (số ID không tăng nhiều, track mỗi frame không tụt).
 3. Sửa giá trị đó trong `config.yaml`, chạy lại `python -m tools.hieu_chinh` để có mốc mới.
 4. Gộp nhiều thay đổi tốt thì **phải chấm lại bản gộp**: các tham số ảnh hưởng lẫn nhau, hai thay đổi riêng lẻ đều tốt có khi gộp lại thì tệ.
-5. Ghi lại vào bảng ở mục 4 (giá trị đã thử, điểm) để báo cáo.
+5. Ghi giá trị đã thử và điểm vào mục 4 để báo cáo.
 
-**Cẩn thận "học tủ":** video tổng hợp do máy vẽ, sạch hơn thực tế. Một giá trị chỉ tốt trên tổng hợp mà làm video thật xấu đi thì đừng giữ. Thay đổi chỉ hơn 0,005 điểm thì coi như bằng nhau.
+**Cẩn thận "học tủ":** đừng chỉnh chỉ cho một cảnh hay một cặp camera. Nên chỉnh trên một cặp camera rồi kiểm tra lại trên cặp kia. Thay đổi chỉ hơn 0,005 điểm thì coi như bằng nhau.
 
 ## 3. Danh sách các chỗ chỉnh
 
 Ký hiệu: ↑ = tăng giá trị, ↓ = giảm giá trị. ★ = nên thử trước.
+
+### Ổn định hình (`stabilization`)
+
+| Tham số | Hiện tại | Nghĩa | ↑ thì | ↓ thì |
+|---|---|---|---|---|
+| `enabled` | true | Bật bù camera trôi/rung | | false: tắt (chỉ nên tắt khi chắc camera đứng yên) |
+| `min_shift_px` | 1,0 | Góc ảnh dời ít hơn bấy nhiêu thì coi như camera đứng yên | Bỏ qua rung nhẹ | Bù cả rung rất nhỏ (ảnh bị nội suy nhiều hơn) |
+| `ransac_threshold_px` | 2,0 | Điểm lệch quá mức này bị coi là điểm trên người, không phải nền | | |
+| `max_corners`, `min_inliers` | 300, 20 | Số điểm nền dùng để đo độ trôi; tối thiểu bấy nhiêu điểm khớp | | |
 
 ### Bước C: tìm người (`detection`)
 
@@ -51,6 +62,7 @@ Ký hiệu: ↑ = tăng giá trị, ↓ = giảm giá trị. ★ = nên thử tr
 | `close_kernel` | [3, 9] | "Cây cọ" dựng đứng để nối thân với chân | Nối được chỗ đứt lớn hơn, nhưng dễ dính hai người | Ít dính người, nhưng người dễ vỡ mảnh |
 | `group_max_height_ratio` | 1,15 | Gộp hai mảnh khi khung gộp không cao quá bấy nhiêu lần một người | Gộp được nhiều mảnh hơn, nhưng dễ gộp nhầm hai người đứng trước – sau | Gộp ít hơn, nhiều mảnh rời hơn |
 | `group_max_gap_ratio` | 1,0 | Khoảng hở tối đa giữa hai mảnh (× chiều cao mảnh) | | |
+| `height_model.max_residual` | 0,15 | Đường chiều cao lệch các điểm quá mức này thì không dùng mô hình (QĐ-30) | Dùng mô hình cả khi khớp kém | Tắt mô hình sớm hơn |
 | `height_model.quantile` | 90 | Lấy mức cao bao nhiêu % trong mỗi dải làm "chiều cao một người" | Đường chiều cao cao hơn | Đường thấp hơn |
 
 ### Bước D: bám người (`people_tracker`, `kalman`)
@@ -95,102 +107,17 @@ Các công tắc sau chỉ để làm thí nghiệm so sánh; bật lên thì k�
 
 > **Giá trị trong bảng trên là giá trị đang dùng sau hai vòng hiệu chỉnh (QĐ-29).** Mục 4–6 ghi lại quá trình.
 
-## 4. Kết quả vòng dò 1 (2026-11-22)
+## 4. Mốc hiện tại và lịch sử
 
-Config gốc lúc đó: `min_area` 150, `iou_gate` 0,1, `max_misses` 10, `new_track_min_height_ratio` 0,6, `tracklet_linking.min_color_similarity` 0,5, `max_cost` 1,0. Mỗi dòng chỉ đổi một tham số. Kết quả đầy đủ ở `outputs/hieu_chinh/01_vong1/bang_diem.csv`.
+**Mốc trên video của nhóm** (2026-11-23, EPFL 4 người, chưa có đáp án): số ID sau khi nối 42 / 26 (c0 + c1) và
+56 / 75 (c2 + c3); chi tiết ở [12](12_he_thong.md). Vì **chưa có cảnh nào có đáp án**, cột `MOTA`, `IDF1`, `DIEM`
+trong bảng điểm còn trống. Khi chưa có đáp án, chỉ nên chỉnh những thay đổi làm giảm số ID mà không làm tụt số
+track mỗi frame, và phải xem lại video debug.
 
-| Lượt | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
-|---|---|---|---|---|---|---|
-| **hiện tại** | **0,796** | 0,755 | 0,836 | 18/20 \| 18/20 | 54 / 48 | 3,70 / 3,53 |
-| ★ `iou_gate` = 0,2 | **0,807** | 0,755 | **0,858** | **20/20 \| 20/20** | 59 / 50 | 3,64 / 3,36 |
-| ★ `max_misses` = 5 | **0,807** | **0,771** | 0,843 | 18/20 \| 18/20 | 58 / 50 | 3,52 / 3,39 |
-| ★ `min_area` = 300 | 0,802 | 0,760 | 0,844 | 18/20 \| 18/20 | 51 / **38** | 3,66 / 3,41 |
-| `mog2_var_threshold` = 25 | 0,802 | 0,762 | 0,842 | 16/20 \| 18/20 | 53 / **38** | 3,56 / 3,45 |
-| ★ `tracklet_linking.min_color_similarity` = 0,3 | 0,800 | 0,755 | 0,844 | 18/20 \| 18/20 | 50 / 46 | 3,70 / 3,53 |
-| `group_max_height_ratio` = 1,05 | 0,797 | 0,756 | 0,837 | 18/20 \| 18/20 | 54 / 60 | 3,70 / 3,76 |
-| `close_kernel` = [3, 5] | 0,795 | 0,752 | 0,838 | 18/20 \| 18/20 | 58 / **34** | 3,73 / 3,30 |
-| `confirm_hits` = 2 | 0,796 | 0,755 | 0,836 | 18/20 \| 18/20 | 53 / 54 | 3,72 / 3,67 |
-| `confirm_hits` = 5 | 0,794 | 0,753 | 0,835 | 16/20 \| 18/20 | 50 / 35 | 3,64 / 3,36 |
-| `new_track_max_iou` = 0,1 | 0,795 | 0,754 | 0,836 | 18/20 \| 18/20 | 50 / 49 | 3,66 / 3,52 |
-| `max_gap_frames` = 60 / 250; `max_dist_ratio` = 2 / 5; `group_max_gap_ratio` = 0,5 / 1,5; `min_area` = 80; `new_track_max_iou` = 0,5 | 0,796 | 0,755 | 0,836 | 18/20 \| 18/20 | 51–60 / 46–60 | gần như không đổi |
-| `reid.match_threshold` = 0,2 / 0,4 | 0,796 | 0,755 | 0,836 | 18/20 \| 18/20 | 54 / 48 | không đổi |
-| `mog2_var_threshold` = 10 | 0,790 ↓ | 0,748 | 0,833 | 16/20 \| 18/20 | 59 / 63 | 3,62 / 3,61 |
-| `iou_gate` = 0,05 | 0,790 ↓ | 0,754 | 0,825 | 16/20 \| 16/20 | 43 / 46 | 3,72 / 3,47 |
-| `merge_max_frames` = 45 | 0,788 ↓ | **0,776** | 0,801 | 17/20 \| 17/20 | 55 / 46 | 3,59 / 3,40 |
-| `merge_max_frames` = 150 | 0,784 ↓ | 0,741 | 0,827 | 19/20 \| 19/20 | 54 / 48 | 3,70 / 3,53 |
-| `min_color_similarity` = 0,7 | 0,782 ↓ | 0,755 | 0,809 | 15/20 \| 15/20 | 62 / 60 | 3,70 / 3,53 |
-| `group_max_height_ratio` = 1,3 | 0,781 ↓ | 0,743 | 0,819 | 15/20 \| 17/20 | 54 / 45 | 3,70 / 3,54 |
-| `max_misses` = 20 | 0,776 ↓ | 0,727 | 0,824 | 18/20 \| 18/20 | 55 / 52 | 3,94 / 3,77 |
-| `close_kernel` = [5, 15] | 0,768 ↓ | 0,715 | 0,820 | 18/20 \| 18/20 | 42 / 45 | 3,37 / 3,47 |
-
-**Đọc kết quả:**
-- Đáng thử nhất: `iou_gate` 0,2 (nhận dạng lại 20/20, IDF1 cao nhất) và `max_misses` 5 (MOTA cao nhất). Trên EPFL hai giá trị này làm số ID tăng nhẹ, nên cần xem thêm video debug.
-- `min_area` 300 và `tracklet_linking.min_color_similarity` 0,3 tốt ở cả tổng hợp lẫn EPFL.
-- `mog2_var_threshold` 25 tốt cho MOTA/IDF1 nhưng nhận dạng lại giảm (16/20): đánh đổi.
-- `merge_max_frames` là đánh đổi rõ: giảm thì MOTA tăng nhưng IDF1 giảm.
-- Nhóm nối tracklet (`max_gap_frames`, `max_dist_ratio`) và `reid.match_threshold` gần như không ảnh hưởng ở các giá trị đã thử.
-
-## 5. Bản gộp sau vòng 1 (đã áp dụng)
-
-File `outputs/hieu_chinh/02_goi_y_gop/config_goi_y.yaml` = config hiện tại + `iou_gate` 0,2, `max_misses` 5, `min_area` 300, `tracklet_linking.min_color_similarity` 0,3.
-
-| Lượt | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
-|---|---|---|---|---|---|---|
-| `config.yaml` hiện tại | 0,796 | 0,755 | 0,836 | 18/20 \| 18/20 | 54 / 48 | 3,70 / 3,53 |
-| **Gộp cả 4 thay đổi** | **0,820** | 0,772 | **0,867** | **20/20 \| 20/20** | 51 / 45 | 3,44 / 3,33 |
-| Gộp 3 thay đổi (giữ `iou_gate` 0,1) | 0,814 | **0,776** | 0,853 | 18/20 \| 18/20 | **44 / 38** | 3,48 / 3,28 |
-
-Bản gộp 4 thay đổi tốt hơn `config.yaml` hiện tại ở mọi cột của video tổng hợp, và ít ID hơn trên EPFL. Track mỗi frame trên EPFL giảm nhẹ (3,70 → 3,44), nên xem video debug để chắc không bỏ sót thêm người.
-
-Bản này đã được chép vào `config.yaml` làm mốc cho vòng 2. Chạy lại riêng bản này:
-
-```bash
-python run.py --scene data/real/epfl_4p_c0_c1 --debug-video --config outputs/hieu_chinh/02_goi_y_gop/config_goi_y.yaml --out outputs/he_thong/epfl_goi_y
-```
-
-## 6. Vòng dò 2 (2026-11-22) và bản cuối
-
-Mốc: bản gộp ở mục 5 (điểm 0,820). Kết quả đầy đủ ở `outputs/hieu_chinh/03_vong2/bang_diem.csv`.
-
-| Lượt | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
-|---|---|---|---|---|---|---|
-| **mốc** | **0,820** | 0,772 | 0,867 | 20/20 \| 20/20 | 51 / 45 | 3,44 / 3,33 |
-| ★ `max_misses` = 3 | 0,825 | 0,779 | 0,870 | 20/20 \| 20/20 | 46 / 41 | 3,37 / 3,23 |
-| ★ `tracklet_linking.max_cost` = 1,3 | 0,820 | 0,772 | 0,867 | 20/20 \| 20/20 | **36 / 38** | 3,44 / 3,33 |
-| ★ `new_track_min_height_ratio` = 0,7 | 0,820 | 0,772 | 0,867 | 20/20 \| 20/20 | 41 / 40 | 3,38 / 3,24 |
-| `mog2_learning_rate` = 0,0005 | 0,820 | 0,772 | 0,868 | 20/20 \| 20/20 | 39 / 42 | 3,41 / 3,35 |
-| `confirm_hits` = 4 | 0,819 | 0,772 | 0,867 | 20/20 \| 20/20 | 44 / 39 | 3,43 / 3,20 |
-| `iou_gate` = 0,15 / 0,3 | 0,822 / 0,825 | | | 20/20 | 46 / 40 và 56 / 32 | |
-| `mog2_var_threshold` = 30 | 0,830 | 0,785 | 0,874 | **18/20** \| 20/20 | 45 / 35 | 3,24 / 3,12 |
-| `merge_max_frames` = 60 | 0,825 | 0,790 | 0,861 | **18/20 \| 18/20** | 52 / 43 | 3,38 / 3,31 |
-| `kalman.acceleration_std_px` = 0,2 | 0,826 | 0,779 | 0,872 | **18/20** \| 20/20 | 54 / 46 | 3,49 / 3,38 |
-| `mog2_var_threshold` = 20 | 0,824 | 0,777 | 0,871 | **18/20** \| 20/20 | 52 / 33 | 3,36 / 3,23 |
-| `max_misses` = 7 | 0,815 | | | 20/20 | 49 / 39 | |
-| `close_kernel` = [3, 7] / [3, 12] | 0,815 / 0,808 ↓ | | | 20/20 | | |
-| `merge_keep_coverage` = 0,4 | 0,809 ↓ | 0,776 | 0,842 | 16/20 | | |
-| `kalman.acceleration_std_px` = 0,05 | 0,804 ↓ | 0,770 | 0,839 | 16/20 | | |
-| `min_area` 200 / 450, `group_max_height_ratio` 1,1, `recover_min_color_similarity` 0,4 / 0,6, `max_size_change` 1,4 / 2,0, `tracklet_linking.min_color_similarity` 0,2 / 0,4, `new_track_min_height_ratio` 0,5 | 0,818–0,820 | | | 20/20 | gần như không đổi | |
-
-Gộp 3 thay đổi ★ (`max_misses` 3, `max_cost` 1,3, `new_track_min_height_ratio` 0,7) rồi chấm lại (`outputs/hieu_chinh/04_gop_vong2/`):
-
-| | DIEM | MOTA | IDF1 | Nhận dạng lại | EPFL ID A / B | EPFL track/frame A / B |
-|---|---|---|---|---|---|---|
-| **Bản cuối (đang dùng)** | **0,825** | 0,779 | 0,870 | **20/20 \| 20/20** | **34 / 31** | 3,29 / 3,14 |
-| + `mog2_learning_rate` 0,0005 | 0,825 | 0,779 | 0,871 | 20/20 \| 20/20 | 34 / 25 | 3,30 / 3,11 |
-| + `confirm_hits` 4 | 0,824 | 0,778 | 0,870 | 20/20 \| 20/20 | 34 / 23 | 3,29 / 3,03 |
-| + `tracklet_linking.max_cost` 1,6 | 0,825 | 0,779 | 0,870 | 20/20 \| 20/20 | 30 / 29 | 3,29 / 3,14 |
-| + `mog2_var_threshold` 30 | 0,834 | 0,791 | 0,877 | 18/20 \| 20/20 | 48 / 24 | 3,08 / 2,91 |
-
-Ba dòng có dấu + đầu tiên không đổi điểm tổng hợp mà EPFL ít ID hơn. **Chưa áp dụng**, vì chưa có đáp án trên EPFL để biết số ID giảm là đúng hay là gộp nhầm người; có thể thử tiếp khi có đáp án. Dòng cuối làm nhận dạng lại giảm.
-
-**Kiểm tra bản cuối trên EPFL:** tỉ lệ người nguyên vẹn được track bám giữ nguyên (89% / 92%), track "ma" giảm 12% → 7% và 13% → 8%. Ảnh debug: phần lớn người có một khung nguyên người với tên ổn định. Lỗi còn lại: người áo đen trước nền tối chỉ có khung ở đầu, 2–3 người chồng nhau bị gộp một khung.
-
-**Điểm từng cảnh của bản cuối** (sau khi nối):
-
-| Cảnh | MOTA A / B | IDF1 A / B | Nhận dạng lại |
-|---|---|---|---|
-| `s1` | 0,96 / 0,86 | 0,98 / 0,86 | 4/4 \| 4/4 |
-| `s2` | 0,42 / 0,51 | 0,68 / 0,73 | 4/4 \| 4/4 |
-| `s3` | 0,95 / 0,89 | 0,98 / 0,94 | 4/4 \| 4/4 |
-| `s4` | 0,59 / 0,70 | 0,79 / 0,79 | 4/4 \| 4/4 |
-| `s5` | 0,96 / 0,95 | 0,98 / 0,98 | 4/4 \| 4/4 |
+**Lịch sử:** các vòng dò ngày 2026-11-22 (QĐ-29) chấm chủ yếu trên video máy vẽ, nên **không còn dùng làm căn cứ**
+(QĐ-31). Các giá trị đang dùng trong `config.yaml` là kết quả của các vòng đó, nên **cần dò lại khi có đáp án**.
+Nên dò trước các tham số sau:
+- `reid.match_threshold` (0,3): trên video thật, điểm ghép thường thấp hơn trên video máy vẽ;
+- `tracklet_linking.min_color_similarity` (0,3): đo trên video của nhóm, cùng người giống màu 0,82–0,86, khác người 0,48–0,64, nên 0,3 có thể quá dễ dãi;
+- `people_tracker.recover_min_color_similarity` (0,5): cùng lý do;
+- `reid.weight_feature` / `weight_color` / `weight_geometry` (0,4 / 0,4 / 0,2): ở ảnh 360×288 điểm đặc trưng khớp ít, nên có thể cần tăng trọng số vị trí sàn.

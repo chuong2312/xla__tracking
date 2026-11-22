@@ -23,6 +23,26 @@ detector:
   max_area: 100000
   min_ratio: 1.2
   max_ratio: 5.0
+stabilization:
+  # Ổn định hình (src/detect/stabilization.py, QĐ-30): đưa mọi frame về tọa độ frame đầu trước khi tìm người,
+  # để bù camera cầm tay / chân máy bị trôi. Camera đứng yên thì gần như không đổi gì (xem min_shift_px).
+  enabled: true
+  # Điểm góc chọn trên frame đầu: số điểm tối đa, chất lượng tối thiểu, khoảng cách tối thiểu (pixel).
+  max_corners: 300
+  quality_level: 0.01
+  min_distance_px: 10
+  # Lucas-Kanade bám điểm từ frame đầu sang frame hiện tại: cửa sổ [rộng, cao] (pixel), số tầng pyramid.
+  # 4 tầng với cửa sổ 21 bắt được độ trôi tới khoảng 300 pixel.
+  lk_win_size: [21, 21]
+  lk_max_level: 4
+  # RANSAC: điểm lệch quá ngưỡng này (pixel) bị coi là điểm trên người đang đi, không phải nền.
+  ransac_threshold_px: 2.0
+  # Cần ít nhất bấy nhiêu điểm nền khớp; ít hơn thì giữ phép biến đổi của frame trước.
+  min_inliers: 20
+  # Góc ảnh dời ít hơn bấy nhiêu pixel thì coi như camera đứng yên, giữ nguyên frame (không làm mờ ảnh).
+  min_shift_px: 1.0
+  # Co vùng hợp lệ ở mép ảnh sau khi biến đổi thêm bấy nhiêu pixel.
+  border_px: 4
 detection:
   # Bước C của hệ thống mới (src/detect/detection.py). Section `detector` ở trên là của detector cũ.
   # Mô hình nền: median_running (trung vị + cập nhật có chọn lọc) hoặc mog2 (QĐ-03).
@@ -68,6 +88,7 @@ detection:
     bin_px: 25          # bề rộng mỗi khoảng y_chân, pixel
     quantile: 90        # phân vị chiều cao trong mỗi khoảng, % (mảnh người thấp, người nguyên vẹn cao)
     min_count: 20       # khoảng có ít box hơn thì bỏ
+    max_residual: 0.15  # đường thẳng lệch các điểm quá 15% (trung vị) thì KHÔNG dùng mô hình: video không hợp giả định sàn phẳng
   # Lọc box: diện tích (pixel) và tỉ lệ cao/rộng của người.
   min_area: 300
   max_area: 40000
@@ -193,7 +214,7 @@ tracklet_linking:
   max_cost: 1.3
 kalman:
   # Độ lệch chuẩn của gia tốc ngẫu nhiên (pixel/frame²). Người hay đổi tốc độ, đổi hướng thì tăng lên.
-  # 0.1 chọn bằng quét lưới trên video tổng hợp v2 (docs/04_kalman.md); phải hiệu chỉnh lại trên dev thật.
+  # 0.1 là giá trị cũ, chọn trước QĐ-31; chưa hiệu chỉnh trên video thật có đáp án (docs/14_hieu_chinh_tham_so.md).
   acceleration_std_px: 0.1
   # Độ lệch chuẩn sai số khi đo tâm người bằng detection (pixel).
   detection_noise_px: 4.0
@@ -230,7 +251,8 @@ features:
   gallery_border_px: 2
 reid:
   # Điểm giống nhau tổng (0–1) dưới mức này thì "không khớp ai" (global_id = −1, XLA 3.2).
-  # 0.3 chọn trên video tổng hợp v2 (cùng người 0,42–0,94; khác người ≤ 0,14); phải hiệu chỉnh lại trên dev thật.
+  # 0.3 là giá trị cũ, chọn trước QĐ-31; trên video thật điểm ghép thường thấp hơn, nên phải hiệu chỉnh lại khi
+  # video của nhóm có đáp án (docs/14_hieu_chinh_tham_so.md).
   match_threshold: 0.3
   # Ratio test của Lowe: chỉ giữ cặp khớp khi khoảng cách tốt nhất < ratio × khoảng cách tốt nhì.
   ratio_test: 0.75
