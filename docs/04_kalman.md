@@ -41,34 +41,22 @@ Nhóm dùng `cv2.KalmanFilter` (thầy cho dùng thư viện) nhưng tự đặt
 | `lk_noise_px` | Độ rung của tâm đo bằng Lucas-Kanade (pixel) | 3.0 |
 | `initial_velocity_std_px` | Độ không chắc chắn của vận tốc lúc mới tạo track | 5.0 |
 
-### Ví dụ hiệu chỉnh tham số bằng quét lưới
+### Hiệu chỉnh tham số
 
-Thử 5 giá trị của `acceleration_std_px` trên quỹ đạo của `s1`, `s2`, `s4` (camera A, phép đo nhiễu 4 px, cố ý che 30 frame):
+`acceleration_std_px` = 0,1 là giá trị cũ, chọn trước QĐ-31. Giá trị nhỏ làm Kalman đoán mượt khi người đi thẳng nhưng
+"chậm hiểu" khi người rẽ; giá trị lớn thì ngược lại. **Phải hiệu chỉnh lại trên video thật có đáp án**
+(`python -m tools.hieu_chinh --set "kalman.acceleration_std_px=[0.05, 0.1, 0.2, 0.5]"`). Đây là "hiệu chỉnh tham số",
+không phải "huấn luyện".
 
-| `acceleration_std_px` | Lệch ở cuối đoạn bị che | Lệch khi vẫn thấy người |
-|---|---|---|
-| 0,5 | 24,7 px | 2,76 px |
-| 0,2 | 9,5 px | 2,24 px |
-| **0,1 (chọn)** | **6,9 px** | **1,91 px** |
-| 0,05 | 5,7 px | 1,67 px |
-| 0,02 | 5,1 px | 1,60 px |
+## Ảnh minh họa (video thật)
 
-Giá trị nhỏ hơn cho điểm tốt hơn, vì người trong video tổng hợp luôn đi thẳng. Người thật hay rẽ; giá trị quá nhỏ làm Kalman "chậm hiểu" khi người đổi hướng. Vì vậy nhóm chọn 0,1 làm điểm khởi đầu, và **phải hiệu chỉnh lại trên video dev thật**. Đây là "hiệu chỉnh tham số", không phải "huấn luyện".
+```bash
+python run.py --scene data/canh/epfl_lab4p_c0_c1
+python -m tools.explain_kalman --run outputs/he_thong/epfl_lab4p_c0_c1 --scene data/canh/epfl_lab4p_c0_c1 --camera cam_a
+```
 
-## Ảnh minh họa
-
-`python -m tools.explain_kalman` sinh ảnh `outputs/explain/kalman/s2_nguoi1_cam_a.png`:
-- **Ảnh trên:** đường đi thật (trắng), phép đo có nhiễu (chấm cam), Kalman ước lượng (xanh dương), và đoạn bị che (đỏ), lúc này Kalman chỉ dự đoán.
-- **Ảnh dưới:** sai lệch so với vị trí thật theo thời gian. Khi còn thấy người, Kalman (xanh) lệch ít hơn phép đo (cam). Trong đoạn bị che, sai lệch tăng dần; sau 30 frame (1 giây) lệch khoảng 9 px.
-
-## Khi nào hỏng
-
-- **Người rẽ hoặc dừng trong lúc bị che:** Kalman vẫn đi thẳng theo vận tốc cũ.
-- **Che quá lâu:** sai lệch tăng dần theo thời gian.
-- **Vài phép đo sai ngay trước lúc bị che** (ví dụ box bị dính với người khác): vận tốc bị kéo lệch. Vì vậy tracker mới không dùng box bị gộp làm phép đo (XLA 2.3).
-
-## Thầy có thể hỏi
-
-- *"Kalman có phải học máy không?"* Không. Kalman là bộ ước lượng với công thức cố định; các ma trận do nhóm tự đặt, không học từ dữ liệu.
-- *"Vì sao dùng hai mức nhiễu đo?"* Đo bằng detection và đo bằng Lucas-Kanade có độ rung khác nhau. Nguồn nào chính xác hơn thì được tin nhiều hơn.
-- *"Giá trị 0,1 chọn thế nào?"* Bằng quét lưới, xem bảng ở trên.
+Công cụ lấy đoạn dài nhất mà một người được bám liên tục, cố ý giấu phép đo 30 frame ở giữa (như thể người bị che), rồi
+chạy Kalman (`outputs/explain/kalman/`):
+- **Ảnh trên:** vị trí đo được trên video thật (trắng), Kalman ước lượng (xanh dương), đoạn giấu phép đo (đỏ), lúc này Kalman chỉ dự đoán.
+- **Ảnh dưới:** Kalman lệch bao nhiêu pixel so với vị trí đo được. Trên camera 0 của video nhóm (track dài nhất), sau
+  30 frame (1,2 giây) không có phép đo, Kalman lệch khoảng 47 px: người thật đổi hướng và đổi tốc độ, không đi thẳng đều.

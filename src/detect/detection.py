@@ -107,10 +107,15 @@ class PersonDetector:
             mask[max(0, int(y)):max(0, int(y + h)), max(0, int(x)):max(0, int(x + w))] = 0
         return mask
 
-    def detect(self, frame_bgr: np.ndarray) -> list[Box]:
-        """Tìm box các vùng giống người; mask sau morphology lưu ở `last_mask`."""
+    def detect(self, frame_bgr: np.ndarray, valid_mask: np.ndarray | None = None) -> list[Box]:
+        """Tìm box các vùng giống người; mask sau morphology lưu ở `last_mask`.
+
+        `valid_mask` (0/255, tùy chọn): vùng có dữ liệu thật sau khi ổn định hình; ngoài vùng đó bỏ qua.
+        """
         cfg = self._cfg
         mask = self._apply_regions(self._model.apply(frame_bgr))
+        if valid_mask is not None:
+            mask = cv2.bitwise_and(mask, valid_mask)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, _kernel(cfg["open_kernel"]), iterations=int(cfg["open_iterations"]))
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, _kernel(cfg["close_kernel"]), iterations=int(cfg["close_iterations"]))
         self.last_mask = mask

@@ -61,7 +61,7 @@ Cài cả hai máy giống nhau:
 
 ## 5. Danh sách kịch bản
 
-Tất cả đều quay trong hành lang, theo bố trí ở mục 3. Các kịch bản giống video tổng hợp v2 ([01_video_tong_hop.md](01_video_tong_hop.md)).
+Tất cả đều quay trong hành lang, theo bố trí ở mục 3.
 
 | Kịch bản | Nội dung | Kiểm tra phần nào | Số lượt |
 |---|---|---|---|
@@ -83,9 +83,10 @@ Lưu ý cho báo cáo: dev và test dùng **cùng 4 người**, nên kết quả
    ```
 2. **Xếp file vào thư mục:**
    ```
-   data/real/<dev|test>/<S1|S2|S3|S4|S5>/<cam_a|cam_b>/video.mp4
+   data/canh/<ten_canh>/<cam_a|cam_b>/video.<đuôi>      (ví dụ data/canh/hanh_lang_s2_dev/)
    ```
-   Giữ bản gốc ở chỗ khác, không đưa vào repo.
+   Cách nhanh: chép video gốc vào `data/video_moi/` rồi chạy `python -m tools.tao_canh` (xem [data/README.md](../data/README.md)).
+   Không đưa video lên GitHub.
 3. **Đồng bộ.** Tìm frame có tiếng vỗ tay ở mỗi camera. Độ lệch giữa hai camera ghi vào `cameras.cam_b.frame_offset`.
 4. **Homography mặt sàn.** Click các điểm băng keo theo cùng một thứ tự ở hai camera, bằng công cụ `tools/calibrate_floor.py` (sẽ viết). Sau đó tính `cv2.findHomography` và lưu kết quả vào config.
 

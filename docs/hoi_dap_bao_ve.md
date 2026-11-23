@@ -71,7 +71,13 @@ Kernel thiên dọc nối được thân với chân khi chúng bị đứt (do 
 - Đây là thống kê và kẻ đường thẳng, không phải học máy.
 
 **MOG2 có làm mất người đứng yên không? Giải quyết thế nào?** (QĐ-28)
-Có. MOG2 cập nhật nền ở mọi pixel, kể cả chỗ có người, nên người đứng yên lâu dần bị coi là nền. Tốc độ "quên" (learning rate) quyết định bao lâu: nền cần khoảng 1/rate frame để theo kịp. Nhóm hạ từ 0,005 (khoảng 8 giây) xuống 0,001 (khoảng 40 giây). Kết quả: cảnh tổng hợp có người đứng yên (`s3`) tăng MOTA cam A từ 0,66 lên 0,93; số ID trên EPFL giảm 85 → 54 và 66 → 48. Đổi lại, khi đèn đổi đột ngột, nền theo kịp chậm hơn.
+Có. MOG2 cập nhật nền ở mọi pixel, kể cả chỗ có người, nên người đứng yên lâu dần bị coi là nền. Tốc độ "quên" (learning rate) quyết định bao lâu: nền cần khoảng 1/rate frame để theo kịp. Nhóm hạ từ 0,005 (khoảng 8 giây) xuống 0,001 (khoảng 40 giây). Kết quả: số ID trên EPFL phòng thí nghiệm 4 người giảm 85 → 54 và 66 → 48, người đứng yên không còn biến mất. Đổi lại, khi đèn đổi đột ngột, nền theo kịp chậm hơn.
+
+**Video quay mà camera không đứng yên thì sao?** (QĐ-30)
+Trừ nền cần camera đứng yên. Nếu camera trôi (quay cầm tay, chân máy không chắc), mép mọi vật đều bị coi là chuyển động. Nhóm thêm bước ổn định hình: bám các điểm góc trên nền bằng Lucas-Kanade, ước lượng phép dời + xoay của cả khung bằng RANSAC (điểm trên người đang đi bị loại), rồi đưa frame về đúng chỗ của frame đầu. Video của nhóm quay bằng camera cố định, nên bước này không làm thay đổi frame. Đây là ước lượng hình học, không phải học máy.
+
+**Mô hình chiều cao sai thì sao?** (QĐ-30)
+Hệ thống kiểm tra trước khi dùng: nếu các điểm đo lệch đường thẳng quá 15% (ví dụ quay giếng trời nhiều tầng: người ở tầng trên vừa nằm cao trong ảnh vừa nhỏ) thì bỏ mô hình. Nếu không bỏ, người thật bị coi là mảnh và không được tạo track.
 
 **Vì sao chọn MOG2 làm mặc định?** (QĐ-25)
 Trên video thật EPFL không có cảnh trống ở đầu và ánh sáng nhấp nháy. Trừ nền trung vị báo nhầm khoảng 15% ảnh, MOG2 chỉ 5%. MOG2 chỉ tìm vùng chuyển động, không biết đâu là người.
@@ -79,7 +85,7 @@ Trên video thật EPFL không có cảnh trống ở đầu và ánh sáng nh�
 ## Bám người (D)
 
 **Vì sao khung thấp không được tạo track mới?** (QĐ-27)
-Trên video thật, người mặc áo đen trước tường tối bị tách thành mảnh đầu và mảnh chân. Nếu mỗi mảnh sinh một track thì một người có nhiều tên. Đo trên EPFL: các track trùng đó chỉ sống khoảng 1,4 giây rồi chết. Vì vậy chỉ khung cao ít nhất 60% chiều cao người mong đợi mới được tạo track mới; khung chạm mép ảnh được miễn. Số ID giảm hơn một nửa mà điểm trên video tổng hợp không đổi. Ngưỡng 0,6 được chọn bằng hiệu chỉnh tham số (thử 0 / 0,4 / 0,5 / 0,6 / 0,7).
+Trên video thật, người mặc áo đen trước tường tối bị tách thành mảnh đầu và mảnh chân. Nếu mỗi mảnh sinh một track thì một người có nhiều tên. Đo trên EPFL: các track trùng đó chỉ sống khoảng 1,4 giây rồi chết. Vì vậy chỉ khung cao ít nhất 60% chiều cao người mong đợi mới được tạo track mới; khung chạm mép ảnh được miễn. Số ID trên EPFL giảm hơn một nửa. Ngưỡng được chọn bằng hiệu chỉnh tham số: ban đầu 0,6 (thử 0 / 0,4 / 0,5 / 0,6 / 0,7), sau khi chỉnh các tham số khác thì nâng lên 0,7 (QĐ-29).
 
 
 **Vì sao dùng Lucas-Kanade mà không dùng Farneback?** (XLA 2.13, câu trả lời đã sửa)
@@ -120,7 +126,7 @@ Có hai lớp bảo vệ:
 Tô đen nền tạo ra cạnh tương phản nhân tạo dọc viền người, và detector sẽ bắt keypoint giả ở đó (đo được 26% keypoint nằm ở viền). Viền của hai người khác nhau lại trông giống nhau, nên sinh ra khớp giả. Cách đúng là dùng tham số `mask` của detector, với mask đã được erode (XLA 2.6).
 
 **Vì sao không dùng màu làm đặc trưng chính?**
-Màu lệch giữa hai camera do cân bằng trắng khác nhau, và kịch bản S4 có hai áo cùng màu. Vì vậy màu chỉ là đặc trưng bổ trợ, và được chuẩn hóa gray-world riêng cho từng camera.
+Màu lệch giữa hai camera do cân bằng trắng khác nhau, và nhiều người mặc cùng tông màu. Đo trên video thật EPFL: cùng một người giống màu trung bình 0,70, hai người khác nhau 0,50, hai khoảng chồng lên nhau. Vì vậy màu chỉ là đặc trưng bổ trợ, và được chuẩn hóa gray-world riêng cho từng camera.
 
 **ASIFT khác SIFT thế nào? `sift_auto` là gì?** *(chưa cài)*
 - **SIFT:** tìm keypoint bất biến với tỉ lệ (to/nhỏ) và với phép xoay, nhưng kém khi góc nhìn nghiêng nhiều.
@@ -167,11 +173,33 @@ Mỗi kịch bản quay 2 lượt: một lượt để hiệu chỉnh tham số 
 
 ## Các module đã làm (01–06)
 
-**Sao không dùng luôn video thật mà phải làm video tổng hợp?** ([01](01_video_tong_hop.md))
-Video tổng hợp có đáp án chính xác tuyệt đối, và tạo lại được giống hệt bằng cùng một seed. Vì vậy nó dùng để kiểm tra code có làm đúng ý không. Video thật mới dùng để đánh giá chất lượng; kết quả trên video tổng hợp không được báo cáo như kết quả thật.
+**Đồ án dùng dữ liệu gì? Có dùng video máy vẽ không?** (QĐ-31, QĐ-32)
+Không dùng video máy vẽ. Nhóm chỉ dùng **video thật do nhóm đưa**: bộ "Multi-camera pedestrians video" của EPFL,
+phòng thí nghiệm 4 người, 4 camera quay cùng lúc. Test tự động cũng chạy trên chính các video này.
 
-**Trong video tổng hợp, máy biết người bị che bao nhiêu bằng cách nào?** ([01](01_video_tong_hop.md))
-Máy vẽ người ở xa trước, người ở gần sau, và giữ một "bản đồ ai ở pixel nào". Phần nhìn thấy của mỗi người là các pixel còn mang mã của họ. Tỉ lệ nhìn thấy từ 90% trở lên là mức 0, từ 50% đến dưới 90% là mức 1, dưới 50% là mức 2.
+**Chưa có đáp án thì biết hệ thống đúng tới đâu?** ([15](15_du_lieu_that_va_dap_an.md))
+Hiện kiểm tra được những thứ không cần đáp án:
+- khung tìm được cao bằng 0,90 lần chiều cao người mong đợi, tính từ hiệu chỉnh camera của EPFL;
+- 1000 frame đầu có 7 tên cho tối đa 4 người;
+- cùng một người giống màu hơn hai người khác nhau.
+
+Muốn có MOTA, IDF1 thì nhóm phải tự khoanh đáp án ở các frame mốc bằng `tools/annotate.py`. Đó là việc của người,
+không để máy làm.
+
+**Chưa có `gt_reid.csv` thì sao biết ghép người giữa hai camera đúng hay sai?** (QĐ-35)
+Dùng hình học camera do EPFL đo. Cùng một người ở cùng một lúc thì chân ở hai camera phải rơi vào cùng một chỗ trên
+bản đồ sàn. Hai track được ghép mà chân cách nhau hơn khoảng 0,75 m (trung vị trên các frame cả hai cùng có mặt) thì
+gần như chắc chắn là ghép nhầm. Cách này chỉ chấm khách quan được biến thể "chỉ ngoại hình". Biến thể có vị trí sàn đã
+dùng chính thông tin đó để ghép, nên dùng nó để chấm thì giống tự chấm bài của mình.
+
+**Bản đồ sàn EPFL tính bằng đơn vị gì? Sao biết 40 đơn vị khoảng 0,75 m?** (QĐ-35)
+File EPFL không ghi đơn vị, nên nhóm tự suy ra bằng hai cách độc lập:
+- Từ hai mặt phẳng (sàn, và đầu cao 1,75 m) của camera 0 và 1, dựng lại ma trận camera. Thang đo đúng là thang đo làm
+  tiêu cự ngang bằng tiêu cự dọc. Kết quả: 1,8–1,9 cm một đơn vị.
+- Bề rộng người đo trên sàn có trung vị khoảng 30 đơn vị, tức khoảng 0,55 m. Con số này hợp với người thật.
+
+**Vì sao các ngưỡng của bài chấm không nằm trong config?** (QĐ-34, QĐ-35)
+Đó là định nghĩa của thước đo, giống ngưỡng IoU 0,5 của MOTA. Để trong config thì ai cũng chỉnh được thước đo cho đẹp số.
 
 **Vì sao homography cần ít nhất 4 điểm?** ([02](02_homography_san.md))
 H là ma trận 3×3 nhưng chỉ có 8 ẩn, vì nhân H với cùng một số thì kết quả chiếu không đổi. Mỗi cặp điểm cho 2 phương trình, nên cần 4 cặp. Có nhiều hơn 4 cặp thì dùng RANSAC để loại cặp bị click nhầm.
@@ -183,7 +211,7 @@ Là khoảng cách (pixel) giữa điểm ở camera A sau khi chiếu sang came
 Bảng chi phí [[1, 2], [2, 100]]. Ghép tham lam lấy ô 1 trước, rồi buộc phải lấy ô 100, tổng 101. Hungarian lấy 2 + 2, tổng 4.
 
 **Giá trị `acceleration_std_px = 0,1` của Kalman chọn thế nào?** ([04](04_kalman.md))
-Quét lưới 5 giá trị trên quỹ đạo của video tổng hợp, đo độ lệch sau 30 frame bị che: giá trị cũ 0,5 lệch 24,7 px, còn 0,1 lệch 6,9 px. Nhóm không chọn giá trị nhỏ nhất, vì người thật hay rẽ; khi có video dev thật sẽ hiệu chỉnh lại.
+0,1 là giá trị cũ, chọn trước QĐ-31. Trên video của nhóm, giấu phép đo 30 frame thì Kalman lệch khoảng 47 px, vì người thật đổi hướng. Giá trị sẽ được hiệu chỉnh lại trên video thật có đáp án bằng `tools/hieu_chinh.py`.
 
 **MOTA có thể âm không?** ([06](06_cham_diem_mota_idf1.md))
 Có, khi tổng số bỏ sót, báo nhầm và đổi tên nhầm nhiều hơn tổng số box trong đáp án. Thường do báo nhầm rất nhiều.

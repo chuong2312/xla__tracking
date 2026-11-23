@@ -22,6 +22,35 @@ def iter_video(path: str | Path, resize_to: tuple[int, int] | None = None) -> It
             index += 1
     finally: cap.release()
 
+VIDEO_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv", ".m4v")
+
+
+def camera_video(camera_dir: str | Path) -> Path | None:
+    """File video của một camera trong thư mục cảnh: <camera_dir>/video.<đuôi>.
+
+    Nhận mọi đuôi phổ biến (mp4, avi, mov, mkv, m4v; không phân biệt hoa thường), để video gốc
+    chép vào là chạy được, không phải đổi định dạng (đổi định dạng làm ảnh giảm chất lượng).
+    Trả về None nếu thư mục không có video.
+    """
+    folder = Path(camera_dir)
+    if not folder.is_dir():
+        return None
+    for path in sorted(folder.iterdir()):
+        if path.stem == "video" and path.suffix.lower() in VIDEO_EXTENSIONS:
+            return path
+    return None
+
+
+def video_size(path: str | Path) -> tuple[int, int]:
+    """(rộng, cao) gốc của video. Hệ thống mới làm việc trên ảnh gốc, nên đáp án cũng phải theo cỡ này."""
+    capture = cv2.VideoCapture(str(path))
+    if not capture.isOpened():
+        raise ValueError(f"Không mở được video: {path}")
+    size = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    capture.release()
+    return size
+
+
 def scale_rect(rect: Sequence[float], sx: float, sy: float) -> tuple[int, int, int, int]:
     """Scale box theo trục ngang/dọc và làm tròn từng thành phần."""
     if len(rect) != 4: raise ValueError("rect phải có 4 phần tử")

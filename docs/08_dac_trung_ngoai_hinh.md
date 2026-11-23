@@ -58,9 +58,10 @@ Mặc định lấy tối đa 5 tấm mỗi người.
 ## Khi nào hỏng
 
 - **Quần áo trơn, không hoa văn:** gần như không có keypoint; chỉ còn màu.
-- **Hoa văn lặp lại đều** (sọc, ô vuông): nhiều điểm giống hệt nhau nên khó khớp đúng. Trên video tổng hợp, người mặc áo sọc chỉ có khoảng 6 cặp khớp, trong khi áo ô vuông có tới 71.
+- **Ảnh nhỏ:** ở video EPFL 360×288, người chỉ cao khoảng 100 px; phóng lên 128×256 thì gần như không còn chi tiết, nên SIFT hầu như không có cặp khớp, kể cả cùng một người cách 1 giây (đo trên video thật, QĐ-31).
+- **Hoa văn lặp lại đều** (sọc, ô vuông): nhiều điểm giống hệt nhau nên khó khớp đúng.
 - **Hai camera thấy hai mặt khác nhau** (trước/sau): logo, balo khác hẳn.
-- **Hai người mặc giống nhau:** cả keypoint lẫn màu đều không phân biệt được (kịch bản S4).
+- **Hai người mặc giống nhau hoặc cùng tông màu:** cả keypoint lẫn màu đều không phân biệt được. Trên video thật EPFL, màu của cùng một người giống trung bình 0,70, của hai người khác nhau 0,50, hai khoảng chồng lên nhau.
 
 ## Thầy có thể hỏi
 

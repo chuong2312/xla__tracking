@@ -35,7 +35,7 @@ Khi bảo vệ, hội đồng thường hỏi "so với chuẩn nào?" (XLA 3.4)
 
 ## Kiểm tra nhanh
 
-Lấy đáp án làm "kết quả" rồi chấm so với chính nó: phải ra MOTA = 1, MOTP = 1, IDF1 = 1. Đã thử trên `data/synthetic_v2/s2/cam_a` và ra đúng như vậy.
+Lấy đáp án làm "kết quả" rồi chấm so với chính nó: phải ra MOTA = 1, MOTP = 1, IDF1 = 1. Test `tests/test_mot_metrics.py` kiểm tra đúng điều này. Nếu đáp án chỉ khoanh ở các frame mốc, thì chỉ các frame có đáp án được chấm.
 
 ## Khi nào số liệu gây hiểu nhầm
 

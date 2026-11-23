@@ -1,7 +1,9 @@
 """Ảnh minh họa cho nhận dạng lại giữa hai camera (src/reid/reid.py), chế độ oracle.
 
 Cách dùng:
-    python -m tools.explain_reid --scene data/synthetic_v2/s4 --person 3 --out outputs/explain/nhan_dang_lai
+    python -m tools.explain_reid --scene data/canh/<cảnh có đáp án> --person 1 --out outputs/explain/nhan_dang_lai
+
+Cần đáp án (như tools/run_reid.py); video hiện có của nhóm chưa có.
 
 Ảnh 1 (<kịch bản>_bang_diem.png): 5 bảng điểm — keypoint, màu, vị trí sàn, tổng chỉ ngoại hình,
 tổng có vị trí sàn. Ô viền đỏ là cặp đúng theo đáp án, ô viền xanh là cặp chương trình chọn.
@@ -24,6 +26,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
 from src.common.assignment import assign  # noqa: E402
+from src.common.utils import camera_video  # noqa: E402
 from src.reid.color_features import apply_gains, gray_world_gains  # noqa: E402
 from src.reid.keypoint_features import extract, norm_type, normalize_crop  # noqa: E402
 from src.reid.reid import read_frames  # noqa: E402
@@ -67,7 +70,7 @@ def plot_tables(result: dict, threshold: float, title: str, out_png: Path) -> No
 def best_crop(scene_dir: Path, camera: str, track, gains, cfg: dict):
     """Crop chuẩn của lần xuất hiện có box lớn nhất trong gallery của track."""
     observation = max(track.gallery, key=lambda o: o.box[2] * o.box[3])
-    frame = read_frames(str(scene_dir / camera / "video.mp4"), {observation.frame})[observation.frame]
+    frame = read_frames(str(camera_video(scene_dir / camera)), {observation.frame})[observation.frame]
     return normalize_crop(apply_gains(frame, gains), observation.box, cfg["crop_size"])
 
 
@@ -75,7 +78,7 @@ def plot_matches(scene_dir: Path, result: dict, person: int, method: str, config
     """Vẽ các cặp keypoint khớp tốt giữa crop của cùng một người ở hai camera; trả về số cặp."""
     images, features = [], []
     for camera in ("cam_a", "cam_b"):
-        video = str(scene_dir / camera / "video.mp4")
+        video = str(camera_video(scene_dir / camera))
         gains = gray_world_gains(read_frames(video, {0})[0])
         crop, mask = best_crop(scene_dir, camera, result["tracks"][camera][person], gains, config["features"])
         images.append(crop)
@@ -93,8 +96,8 @@ def plot_matches(scene_dir: Path, result: dict, person: int, method: str, config
 def main() -> None:
     """Chạy nhận dạng lại oracle rồi vẽ hai ảnh minh họa."""
     parser = argparse.ArgumentParser(description="Minh họa nhận dạng lại giữa hai camera")
-    parser.add_argument("--scene", type=Path, default=Path("data/synthetic_v2/s4"))
-    parser.add_argument("--person", type=int, default=3)
+    parser.add_argument("--scene", type=Path, required=True, help="cảnh có đáp án (gt_tracking.csv ở hai camera, gt_reid.csv)")
+    parser.add_argument("--person", type=int, default=1)
     parser.add_argument("--method", default=None)
     parser.add_argument("--out", type=Path, default=Path("outputs/explain/nhan_dang_lai"))
     args = parser.parse_args()

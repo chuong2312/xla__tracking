@@ -40,24 +40,23 @@ H có 8 ẩn (ma trận 9 số, nhưng nhân H với cùng một số thì kết
 ## Chạy thử
 
 ```bash
-# Click điểm (mở cửa sổ)
-python tools/calibrate_floor.py --cam-a <video_a> --cam-b <video_b> --out <homography.json>
-# Xuất ảnh kiểm tra: điểm đỏ (chiếu từ A) phải trùng điểm xanh (click ở B)
-python tools/calibrate_floor.py --cam-a data/synthetic_v2/s2/cam_a/video.mp4 \
-    --cam-b data/synthetic_v2/s2/cam_b/video.mp4 \
-    --out data/synthetic_v2/s2/homography.json --explain outputs/explain/homography_san/s2.png
+# Click điểm (mở cửa sổ); điểm đỏ (chiếu từ A) phải trùng điểm xanh (click ở B)
+python tools/calibrate_floor.py --cam-a data/canh/<ten_canh>/cam_a/video.mp4 --cam-b data/canh/<ten_canh>/cam_b/video.mp4 \
+    --out data/canh/<ten_canh>/homography.json --explain outputs/explain/homography_san/<ten_canh>.png
 ```
 
-Trên video tổng hợp, H tính từ 6 điểm băng keo trùng với H thật, sai số khoảng 0,001 px. Test `tests/test_homography.py` còn cố ý làm click lệch một điểm 47 px, và RANSAC phát hiện ra đúng điểm đó.
+Test `tests/test_homography.py` dùng các cặp điểm sàn thật của bộ video nhóm (điểm sàn ở camera 0, chiếu sang camera 1
+bằng hiệu chỉnh EPFL): H tính lại khớp với H thật dưới 0,5 px, và khi cố ý làm click lệch một điểm 47 px thì RANSAC
+phát hiện ra đúng điểm đó.
 
 ## Video thật EPFL: dùng hiệu chỉnh có sẵn
 
-EPFL đã đo sẵn cho mỗi camera một ma trận G "ảnh → bản đồ sàn nhìn từ trên xuống" (file `calibration-4p.txt`). Không cần click tay:
+EPFL đã đo sẵn cho mỗi camera một ma trận G "ảnh → bản đồ sàn nhìn từ trên xuống" (file `calibration-*.txt` trong `data/goc/epfl_*`). Không cần click tay:
 
 ```
 H_AB = G_B⁻¹ · G_A      (ảnh A → bản đồ sàn → ảnh B)
-python -m tools.epfl_homography --calib data/real/epfl/calibration-4p.txt --cam-a 0 --cam-b 1 \
-    --scene data/real/epfl_4p_c0_c1 --explain outputs/explain/homography_epfl.png
+python -m tools.epfl_homography --calib data/goc/epfl_lab4p/calibration-4p.txt --cam-a 0 --cam-b 1 \
+    --scene data/canh/epfl_lab4p_c0_c1 --top-view 0 0 358 360 --explain outputs/explain/homography/epfl_lab4p_c0_c1.png
 ```
 
 Kiểm tra: ảnh minh họa vẽ cùng một lưới sàn lên hai camera, và lưới nằm phẳng trên sàn ở cả hai. Chiếu điểm chân người (lấy từ track) từ A sang B: trung vị cách người gần nhất ở B là 37 px, so với 100 px nếu chọn điểm ngẫu nhiên. Sai số còn lại chủ yếu do box người chưa chuẩn (chỉ có đầu, chân bị che), nên vị trí sàn vẫn chỉ là thông tin bổ trợ.

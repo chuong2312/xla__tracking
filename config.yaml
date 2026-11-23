@@ -23,6 +23,26 @@ detector:
   max_area: 100000
   min_ratio: 1.2
   max_ratio: 5.0
+stabilization:
+  # Ổn định hình (src/detect/stabilization.py, QĐ-30): đưa mọi frame về tọa độ frame đầu trước khi tìm người,
+  # để bù camera cầm tay / chân máy bị trôi. Camera đứng yên thì gần như không đổi gì (xem min_shift_px).
+  enabled: true
+  # Điểm góc chọn trên frame đầu: số điểm tối đa, chất lượng tối thiểu, khoảng cách tối thiểu (pixel).
+  max_corners: 300
+  quality_level: 0.01
+  min_distance_px: 10
+  # Lucas-Kanade bám điểm từ frame đầu sang frame hiện tại: cửa sổ [rộng, cao] (pixel), số tầng pyramid.
+  # 4 tầng với cửa sổ 21 bắt được độ trôi tới khoảng 300 pixel.
+  lk_win_size: [21, 21]
+  lk_max_level: 4
+  # RANSAC: điểm lệch quá ngưỡng này (pixel) bị coi là điểm trên người đang đi, không phải nền.
+  ransac_threshold_px: 2.0
+  # Cần ít nhất bấy nhiêu điểm nền khớp; ít hơn thì giữ phép biến đổi của frame trước.
+  min_inliers: 20
+  # Góc ảnh dời ít hơn bấy nhiêu pixel thì coi như camera đứng yên, giữ nguyên frame (không làm mờ ảnh).
+  min_shift_px: 1.0
+  # Co vùng hợp lệ ở mép ảnh sau khi biến đổi thêm bấy nhiêu pixel.
+  border_px: 4
 detection:
   # Bước C của hệ thống mới (src/detect/detection.py). Section `detector` ở trên là của detector cũ.
   # Mô hình nền: median_running (trung vị + cập nhật có chọn lọc) hoặc mog2 (QĐ-03).
@@ -49,6 +69,9 @@ detection:
   # Tốc độ MOG2 "quên" nền cũ, mỗi frame (0–1). Nền cần khoảng 1/rate frame để theo kịp thay đổi:
   # 0,001 ≈ 1000 frame ≈ 40 giây ở 25 fps. Nhanh quá thì người đứng yên bị nuốt vào nền (QĐ-28).
   mog2_learning_rate: 0.001
+  # Khởi động nhanh (QĐ-33): bấy nhiêu frame đầu MOG2 tự học nhanh để nhớ cảnh trống (50 frame = 2 giây ở 25 fps),
+  # sau đó mới học chậm theo mog2_learning_rate. 0 = tắt (khi đó vài giây đầu có rất nhiều khung ma).
+  mog2_warmup_frames: 50
   # Morphology: opening xóa chấm nhiễu; closing kernel dựng đứng [rộng, cao] nối thân với chân.
   open_kernel: [3, 3]
   open_iterations: 1
@@ -68,8 +91,9 @@ detection:
     bin_px: 25          # bề rộng mỗi khoảng y_chân, pixel
     quantile: 90        # phân vị chiều cao trong mỗi khoảng, % (mảnh người thấp, người nguyên vẹn cao)
     min_count: 20       # khoảng có ít box hơn thì bỏ
+    max_residual: 0.15  # đường thẳng lệch các điểm quá 15% (trung vị) thì KHÔNG dùng mô hình: video không hợp giả định sàn phẳng
   # Lọc box: diện tích (pixel) và tỉ lệ cao/rộng của người.
-  min_area: 150
+  min_area: 300
   max_area: 40000
   min_ratio: 1.0
   max_ratio: 6.0
@@ -89,7 +113,7 @@ people_tracker:
   # Chọn lại điểm mỗi bấy nhiêu frame (hoặc khi còn ít hơn min_points).
   refresh_every: 5
   # IoU tối thiểu để được ghép track với detection.
-  iou_gate: 0.1
+  iou_gate: 0.2
   # Ghép bình thường: chi phí = (1 − IoU) + appearance_weight × (1 − độ giống màu). 0 = chỉ dùng IoU.
   appearance_weight: 0.0
   # Cập nhật màu và ảnh mẫu của track: mới = (1 − r)·cũ + r·hiện tại. 1.0 = thay hẳn mỗi frame.
@@ -98,7 +122,7 @@ people_tracker:
   confirm_hits: 3
   min_confirm_displacement_px: 5
   # Mất detection liên tiếp quá bấy nhiêu frame thì track kết thúc (không tính lúc merged hay static).
-  max_misses: 10
+  max_misses: 3
   # Làm mượt kích thước box: kích thước mới = (1 − a)·cũ + a·detection.
   size_smoothing: 0.3
   # Detection có diện tích to hơn track quá bấy nhiêu lần (hoặc nhỏ hơn 1/bấy nhiêu nếu guard_shrink) thì coi là khả nghi:
@@ -141,7 +165,7 @@ people_tracker:
   new_track_max_iou: 0.3
   # Chỉ tạo track mới từ detection cao ít nhất tỉ lệ này × chiều cao người mong đợi ở vị trí chân đó
   # (mô hình chiều cao, QĐ-27). Mảnh đầu/chân thì thấp hơn nhiều. 0 = tắt. Đơn vị: tỉ lệ 0–1.
-  new_track_min_height_ratio: 0.6
+  new_track_min_height_ratio: 0.7
   # Detection cách mép ảnh không quá chừng này (pixel) thì không xét chiều cao: người đang bước vào bị cắt.
   new_track_border_px: 5
 tracker:
@@ -186,14 +210,14 @@ tracklet_linking:
   # Chỗ bắt đầu đoạn sau lệch khỏi chỗ đoán không quá bấy nhiêu lần đường chéo box.
   max_dist_ratio: 3.0
   # Độ giống màu áo/quần tối thiểu (0–1) để được nối.
-  min_color_similarity: 0.5
+  min_color_similarity: 0.3
   # Chi phí = weight_motion × khoảng cách chuẩn hóa + weight_color × (1 − độ giống màu); chi phí tối đa để nối.
   weight_motion: 0.5
   weight_color: 0.5
-  max_cost: 1.0
+  max_cost: 1.3
 kalman:
   # Độ lệch chuẩn của gia tốc ngẫu nhiên (pixel/frame²). Người hay đổi tốc độ, đổi hướng thì tăng lên.
-  # 0.1 chọn bằng quét lưới trên video tổng hợp v2 (docs/04_kalman.md); phải hiệu chỉnh lại trên dev thật.
+  # 0.1 là giá trị cũ, chọn trước QĐ-31; chưa hiệu chỉnh trên video thật có đáp án (docs/14_hieu_chinh_tham_so.md).
   acceleration_std_px: 0.1
   # Độ lệch chuẩn sai số khi đo tâm người bằng detection (pixel).
   detection_noise_px: 4.0
@@ -230,7 +254,8 @@ features:
   gallery_border_px: 2
 reid:
   # Điểm giống nhau tổng (0–1) dưới mức này thì "không khớp ai" (global_id = −1, XLA 3.2).
-  # 0.3 chọn trên video tổng hợp v2 (cùng người 0,42–0,94; khác người ≤ 0,14); phải hiệu chỉnh lại trên dev thật.
+  # 0.3 là giá trị cũ, chọn trước QĐ-31; trên video thật điểm ghép thường thấp hơn, nên phải hiệu chỉnh lại khi
+  # video của nhóm có đáp án (docs/14_hieu_chinh_tham_so.md).
   match_threshold: 0.3
   # Ratio test của Lowe: chỉ giữ cặp khớp khi khoảng cách tốt nhất < ratio × khoảng cách tốt nhì.
   ratio_test: 0.75

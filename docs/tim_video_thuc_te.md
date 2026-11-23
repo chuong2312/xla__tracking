@@ -96,6 +96,6 @@ Thêm `stock footage` hoặc `free` để ra kho video miễn phí.
 
 1. Cắt lấy đoạn **liên tục, không có chuyển cảnh**, dài 20–30 giây. Nên có vài giây đầu ít người, để có ảnh nền.
 2. Đổi sang frame rate cố định: `ffmpeg -i goc.mp4 -vf fps=30 -an video.mp4`.
-3. Đặt vào `data/real/internet/<tên_ngắn>/cam_a/video.mp4`, kèm một file `nguon.txt` ghi link, giấy phép và các điều kiện ở mục 3.
+3. Chép vào `data/video_moi/`, rồi tạo cảnh: `python -m tools.tao_canh --cam-a data/video_moi/<file> --out data/canh/internet_<tên_ngắn>`. Thêm file `nguon.txt` vào thư mục cảnh, ghi link, giấy phép và các điều kiện ở mục 3.
 4. Video không có đáp án thì gán nhãn bằng `tools/annotate.py`. Giữ đoạn ngắn vì gán nhãn tốn công (xem [ke_hoach_quay_video.md](ke_hoach_quay_video.md), mục 8).
 5. Video có chữ ngày giờ ở góc: khai báo vùng đó trong `scene.ignore_regions`.

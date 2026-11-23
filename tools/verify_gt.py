@@ -1,7 +1,7 @@
 """Kiểm tra file đáp án (ground truth) và xuất video có vẽ box để xem bằng mắt.
 
 Cách dùng:
-    python tools/verify_gt.py --video <video> --gt <gt.csv> --out <video_kiem_tra.mp4> [--size 640 360]
+    python tools/verify_gt.py --video <video> --gt <gt.csv> --out <video_kiem_tra.mp4> [--size RỘNG CAO]
 
 Đọc được cả định dạng cũ (`frame,gt_id,x,y,w,h`) lẫn định dạng mới có thêm
 `occluded,keyframe` (QĐ-15). File cũ được coi là occluded = 0 và keyframe = 1.
@@ -19,8 +19,7 @@ import cv2
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from legacy.config import load_config  # noqa: E402
-from src.common.utils import iter_video  # noqa: E402
+from src.common.utils import iter_video, video_size  # noqa: E402
 
 GtRow = tuple[int, int, int, int, int, int, int, int]
 OCCLUSION_COLORS = {0: (0, 220, 0), 1: (0, 200, 255), 2: (0, 0, 255)}
@@ -91,11 +90,10 @@ def main() -> None:
     parser.add_argument("--video", required=True)
     parser.add_argument("--gt", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--size", nargs=2, type=int, metavar=("WIDTH", "HEIGHT"))
-    parser.add_argument("--config", default=str(PROJECT_ROOT / "config.yaml"))
+    parser.add_argument("--size", nargs=2, type=int, metavar=("WIDTH", "HEIGHT"),
+                        help="đổi cỡ ảnh (mặc định: giữ cỡ gốc của video, đúng với hệ thống mới)")
     args = parser.parse_args()
-    cfg = load_config(args.config)
-    size = tuple(args.size) if args.size else (cfg.scene.resize_width, cfg.scene.resize_height)
+    size = tuple(args.size) if args.size else video_size(args.video)
     rows = read_gt(args.gt)
     seen = write_overlay(args.video, rows, args.out, size)
     print(f"Số gt_id: {len(seen)}")

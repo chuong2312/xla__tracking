@@ -295,7 +295,7 @@ src/
   metrics.py       (giữ phần cũ) + MOTA/MOTP/IDF1, gán track → gt_id
   viz.py           overlay, ảnh minh họa từng bước (--explain)
 run.py             --stage detect|track|events|reid|all --scene <thư mục cảnh>
-tools/             annotate (thêm cột occluded), verify_gt, make_synthetic v2, calibrate_floor, ablate, benchmark
+tools/             annotate (thêm cột occluded), verify_gt, calibrate_floor, epfl_homography, tao_canh, hieu_chinh
 docs/              tài liệu này và tài liệu của từng module
 ```
 
@@ -308,11 +308,8 @@ docs/              tài liệu này và tài liệu của từng module
 - `tests/legacy/test_tracker_crossing.py`, dùng làm test chấp nhận cho tracker mới.
 - Tracker cũ được giữ lại trong git bằng một tag trước khi thay.
 
-**Video tổng hợp v2** (XLA 2.4):
-- Mỗi hộp có màu và texture khác biệt rõ.
-- **Thêm một cặp hộp cùng màu**, mô phỏng S4.
-- Một kịch bản người đứng yên (S3).
-- Một kịch bản nhóm đi sát nhau rồi tách ra (thay cho kịch bản qua cửa đã bỏ).
+**Dữ liệu (QĐ-31, QĐ-32):** chỉ dùng video thật do nhóm đưa (hiện là bộ EPFL phòng thí nghiệm 4 người). Video máy
+vẽ (video tổng hợp v2) đã bị bỏ. Muốn chấm điểm thì nhóm tự khoanh đáp án, xem [15](15_du_lieu_that_va_dap_an.md).
 
 ## 6. Cách làm việc để hiểu được code
 
@@ -340,7 +337,7 @@ Thứ tự ưu tiên theo XLA 4.4: C (bản tối thiểu) → D → F (chỉ SI
 | Giai đoạn | Việc | Cổng nghiệm thu |
 |---|---|---|
 | 0. Ngay | Hỏi thầy theo [cau_hoi_thay.md](cau_hoi_thay.md): **đã xong ngày 2026-11-21**. Còn lại: commit và tag tracker cũ, chuẩn bị quay. | Có câu trả lời của thầy (đạt) |
-| 1. Dữ liệu | Quay theo [ke_hoach_quay_video.md](ke_hoach_quay_video.md), chuyển sang frame rate cố định, click điểm homography, gán GT. Song song: làm video tổng hợp v2. | Đủ GT cho dev và test; `verify_gt` không còn cảnh báo |
+| 1. Dữ liệu | Quay theo [ke_hoach_quay_video.md](ke_hoach_quay_video.md), chuyển sang frame rate cố định, click điểm homography, gán GT. Song song: dùng video EPFL có đáp án (QĐ-31). | Đủ GT cho dev và test; `verify_gt` không còn cảnh báo |
 | 2. C | `background.py`, `detection.py`, ablation MOG2 | Đếm đúng số người ở ít nhất 80% số frame trên dev |
 | 3. D | `kalman.py`, `optical_flow.py`, `assignment.py`, `tracker.py`, MOTA/IDF1 | Test giao cắt với detection chuẩn: 0 lần đổi ID. Có số IDF1 trên dev. |
 | 4. E | ~~`door.py`~~ đã bỏ (QĐ-21) | — |

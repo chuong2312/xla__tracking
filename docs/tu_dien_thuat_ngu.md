@@ -50,6 +50,12 @@
 | **detection** (một lần phát hiện) | Một khung tìm được trong một tấm ảnh. Lúc này chưa biết đó là ai. |
 | **detector** | Phần chương trình làm bước tìm người (bước C). |
 | **mảnh người** (fragment) | Một phần của người bị tách riêng, ví dụ chỉ có đầu hoặc chỉ có chân, vì áo trùng màu nền nên phần thân "biến mất" trong mask. |
+| **ổn định hình** (video stabilization) | Bù việc camera bị trôi hoặc rung: dời và xoay mỗi frame cho khớp với frame đầu, để nền đứng yên trở lại trước khi trừ nền. |
+| **phép biến đổi affine** | Cách dời, xoay và phóng to/thu nhỏ đều cả bức ảnh, mô tả bằng một ma trận 2×3. Ổn định hình dùng loại chỉ có dời + xoay + co giãn đều (4 ẩn). |
+| **độ trôi camera** (camera drift) | Khung hình xê dịch dần so với lúc bắt đầu quay, thường do cầm tay hoặc chân máy không chắc. Mỗi frame trôi rất ít nhưng cộng dồn thành nhiều. |
+| **đáp án** (ground truth, GT) | Kết quả đúng do người gán tay: ở mỗi frame mốc, mỗi người được khoanh khung và có tên. Có đáp án mới chấm được MOTA, IDF1. Video của nhóm hiện chưa có; nhóm khoanh bằng `tools/annotate.py` |
+| **top view** (bản đồ sàn nhìn từ trên xuống) | Hình chiếu của mặt sàn như nhìn từ trần nhà xuống. File hiệu chỉnh EPFL đổi điểm trong ảnh thành điểm trên bản đồ sàn này |
+| **video thật** | Video quay bằng camera thật. Dự án **chỉ dùng video thật do nhóm đưa** (QĐ-31, QĐ-32), không dùng ảnh hay video do máy vẽ |
 | **track trùng** (duplicate track) | Một người mà có hai track, tức hai tên, cùng lúc. Thường do một mảnh của người đó (đầu hoặc chân) bị coi là người mới. |
 | **mô hình chiều cao** (height model) | Đường thẳng cho biết người đứng ở vị trí chân y thì cao khoảng bao nhiêu pixel: `cao = a·y + b`. Camera nhìn từ trên xuống nên người càng gần thì chân càng thấp trong ảnh và người càng cao. |
 | **phân vị 90%** (percentile) | Xếp các số từ nhỏ đến lớn, lấy số đứng ở vị trí 90%. Ví dụ 100 chiều cao thì lấy số thứ 90. Mảnh người thấp nằm ở nửa dưới, nên phân vị 90% gần với chiều cao người nguyên vẹn. |
@@ -133,6 +139,9 @@
 | **IDF1** | Điểm cho việc **giữ đúng tên** của mỗi người suốt cả video. |
 | **rank-1** | Với mỗi người ở camera A, xem người giống nhất ở camera B có đúng là họ không. |
 | **x/y cặp đúng** | Ví dụ 3/4 nghĩa là ghép đúng 3 trong 4 người. Luôn ghi rõ mẫu số. |
+| **kiểm tra chéo** (cross-check) | Khi chưa có đáp án, dùng một nguồn thông tin khác, độc lập, để soát kết quả. Ví dụ: ghép người giữa hai camera bằng ngoại hình, rồi soát lại bằng vị trí chân trên bản đồ sàn (QĐ-35). |
+| **cặp hình học** | Một track ở camera A và một track ở camera B mà chân của chúng trùng chỗ trên bản đồ sàn (cách nhau không quá khoảng 0,75 m) trong ít nhất 1 giây. Gần như chắc chắn là cùng một người. |
+| **khớp / lệch / không kiểm được** | Ba loại của một cặp đã ghép giữa hai camera (QĐ-35). Khớp: chân hai bên trùng chỗ trên sàn. Lệch: chân cách xa nhau, tức ghép nhầm. Không kiểm được: hai track hầu như không xuất hiện cùng lúc. |
 | **oracle** (chạy với đáp án) | Cho một bước dùng khung trong đáp án thay vì khung tự tìm. Nhờ vậy đo được riêng năng lực của bước sau, không bị lỗi của bước trước ảnh hưởng. |
 | **end-to-end** (từ đầu đến cuối) | Chạy toàn bộ chương trình thật. Lỗi của bước trước cộng dồn sang bước sau. |
 | **ablation** (thí nghiệm so sánh) | Tắt hoặc thay một bộ phận để xem bộ phận đó giúp được bao nhiêu. Ví dụ: so MOG2 với trung vị, so SIFT với ASIFT. |
@@ -166,10 +175,7 @@
 
 | Từ | Nghĩa dễ hiểu |
 |---|---|
-| **video tổng hợp** | Video giả do máy tự vẽ: hình chữ nhật có hoa văn đóng vai người. Máy biết sẵn đáp án nên không cần gán nhãn tay. |
-| **kịch bản** (`s1`–`s5`) | Mỗi kịch bản là một cách đi lại của 4 người, dùng để thử một tình huống: đi thưa, cắt nhau, đứng yên, mặc giống nhau, đi thành nhóm. |
 | **mốc, quỹ đạo** | Quỹ đạo là đường đi của một người. Mốc là các điểm "giây thứ mấy, đứng ở đâu"; giữa hai mốc người đi thẳng đều. |
-| **seed** | Con số khởi đầu cho phần ngẫu nhiên. Cùng seed thì máy vẽ ra y hệt nhau, nên kết quả kiểm tra lặp lại được. |
 | **bản đồ ai ở pixel nào** (label map) | Bảng cùng kích thước ảnh, mỗi ô ghi mã người đang hiện ở pixel đó. Dùng để biết phần nhìn thấy của từng người khi bị che. |
 | **pixel trên mét** | Ở một chỗ trên sàn, 1 m dài bao nhiêu pixel trong ảnh. Gần camera thì lớn, xa camera thì nhỏ. |
 | **điểm băng keo** | Các điểm dán trên sàn, nhìn thấy ở cả hai camera, dùng để tính homography. |

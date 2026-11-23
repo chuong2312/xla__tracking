@@ -1,21 +1,13 @@
 # outputs/
 
-Mọi thứ trong thư mục này đều sinh lại được từ code và data, nên không commit (xem `.gitignore`). Riêng file này được commit.
+Mọi thứ trong thư mục này đều sinh lại được từ code và data, nên không commit (xem `.gitignore`); riêng file này được
+commit. Chỉ có kết quả trên **video thật của nhóm** (QĐ-31, QĐ-32); kết quả cũ đã dọn ngày 2026-11-23.
 
-| Đường dẫn | Nội dung |
-|---|---|
-| `detections.csv`, `detector_debug.mp4`, `tracks.csv`, `tracking_debug.mp4`, `gt_check.mp4` | Output mặc định của các lệnh trong README gốc. Mỗi lần chạy lại sẽ ghi đè. |
-| `explain/` | Ảnh minh họa của các module mới (`video_tong_hop`, `homography_san`, `homography_epfl.png`, `ghep_cap`, `kalman`, `nhan_dang_lai`, `chieu_cao`). Tạo lại bằng các lệnh trong README gốc. |
-| `he_thong/<cảnh>/` | Kết quả `run.py` của hệ thống mới cho từng cảnh (track, track đã nối, ID toàn cục, `summary.json`, video debug). |
-| `hieu_chinh/<NN_ten>/` | Các vòng dò tham số của `tools/hieu_chinh.py`: mỗi lượt một thư mục con kèm `config.yaml`, bảng tổng `bang_diem.csv`. |
-| `smoke/` | Lần chạy thử công cụ gán nhãn `tools/annotate.py`. |
-| `synthetic_d2/00_initial/` | Lần chạy đầu của tracker trên video tổng hợp `cross` và `occlude`. |
-| `synthetic_d2/01–03_corrective_pass*/` | Các vòng sửa tracker. Mỗi vòng gồm `tracks.csv` và video debug. |
-| `synthetic_d2/04_pass4/` | Vòng đầu tiên có diagnostics JSONL. |
-| `synthetic_d2/05_pass5/` | Chạy `tracker_only` (detection oracle) và `integration` (detector + tracker), có manifest. |
-| `synthetic_d2/06_pass5_audit/`, `07_pass5_audit2/` | Script và bảng phân tích: ablation a–e, độ nhạy theo seed, các frame bị đổi ID. |
-| `real_dev_S1/base/` | Video thật S1 cam_a chạy với config lúc đó. `diag/` chứa ảnh so sánh frame với foreground mask. |
-| `real_dev_S1/lr01/` | Giống `base` nhưng `detector.learningRate: 0.01` (xem `config_lr01.yaml`). |
-| `real_dev_S1/r1/` | Giống `base` nhưng `min_area: 120`, `max_area: 3000` (xem `config_r1.yaml`). |
+| Đường dẫn | Nội dung | Tạo bằng |
+|---|---|---|
+| `he_thong/<cảnh>/` | Kết quả cho từng cảnh: khung tìm được, track, track đã nối, ID toàn cục, `summary.json` (có điểm khi cảnh có đáp án), video debug | `python run.py --scene data/canh/<cảnh> --debug-video` |
+| `hieu_chinh/<thời gian>/` | Các lượt dò tham số: mỗi lượt một thư mục con kèm `config.yaml`, bảng tổng `bang_diem.csv` | `python -m tools.hieu_chinh` |
+| `reid/<cảnh>/` | Nhận dạng lại dùng khung đáp án làm track (cần cảnh có đáp án) | `python -m tools.run_reid --scene …` |
+| `explain/` | Ảnh minh họa: `ghep_cap`, `kalman`, `chieu_cao`, `homography`, `nhan_dang_lai`, `on_dinh_hinh` | các lệnh `python -m tools.explain_*` |
 
-Quy ước cho các lần chạy mới: tạo một thư mục riêng `outputs/<giai_doan>/<NN_ten_ngan>/`, đặt kèm file config đã dùng, và ưu tiên chạy bằng `tools/trace_tracking.py` để có manifest.
+Quy ước cho các lần chạy mới: tạo một thư mục riêng `outputs/<giai_doan>/<NN_ten_ngan>/` và đặt kèm file config đã dùng.

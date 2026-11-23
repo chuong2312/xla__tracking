@@ -1,5 +1,8 @@
 """Chạy hệ thống trên MỘT camera: tìm người (C) → bám người (D).
 
+Nếu bật `stabilization`, mỗi frame được ổn định hình trước (src/detect/stabilization.py): tìm người
+và bám người chạy trên frame đã ổn định, còn box ghi ra file và vẽ lên video debug được đổi về
+tọa độ video gốc.
 Trước đó, một lượt chạy trên các frame đầu ước lượng chiều cao người theo vị trí chân
 (src/detect/height_model.py) để bước tìm người gộp đúng các mảnh của cùng một người.
 Mỗi frame:
@@ -18,6 +21,7 @@ from pathlib import Path
 import cv2
 
 from src.detect.detection import PersonDetector
+from src.detect.stabilization import Stabilizer
 from src.detect.height_model import HeightModel, fit_height_model, save
 from src.tracking.people_tracker import PeopleTracker
 from src.tracking.track import ACTIVE_STATES
@@ -38,15 +42,29 @@ class CameraResult:
     rows: list[tuple] = field(default_factory=list)
 
 
-def draw_tracks(frame, tracks):
-    """Vẽ box theo màu trạng thái, kèm ID, lên ảnh debug."""
+def draw_tracks(frame, tracks, to_original=None):
+    """Vẽ box theo màu trạng thái, kèm ID, lên ảnh debug (đổi box về tọa độ gốc nếu có `to_original`)."""
     canvas = frame.copy()
     for track in tracks:
-        x, y, w, h = track.box
+        x, y, w, h = to_original(track.box) if to_original else track.box
         color = STATE_COLORS[track.state]
         cv2.rectangle(canvas, (x, y), (x + w, y + h), color, 2)
         cv2.putText(canvas, f"{track.id} {track.state}", (x, max(12, y - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
     return canvas
+
+
+def make_stabilizer(config: Mapping) -> Stabilizer | None:
+    """Bộ ổn định hình nếu `stabilization.enabled`, ngược lại None."""
+    return Stabilizer(config["stabilization"]) if config["stabilization"]["enabled"] else None
+
+
+def stable_frames(video: str | Path, stabilizer: Stabilizer | None):
+    """Sinh (chỉ số frame, frame gốc, frame đã ổn định, vùng hợp lệ hoặc None)."""
+    for frame_index, frame in iter_video(video):
+        if stabilizer is None:
+            yield frame_index, frame, frame, None
+        else:
+            yield frame_index, frame, stabilizer.apply(frame), stabilizer.valid_mask
 
 
 def estimate_heights(video: str | Path, config: Mapping) -> HeightModel | None:
@@ -54,16 +72,20 @@ def estimate_heights(video: str | Path, config: Mapping) -> HeightModel | None:
     cfg = config["detection"]["height_model"]
     detector = PersonDetector(config["detection"])
     boxes = []
-    for frame_index, frame in iter_video(video):
+    for frame_index, _, work, valid in stable_frames(video, make_stabilizer(config)):
         if frame_index >= int(cfg["frames"]):
             break
-        boxes.extend(detector.detect(frame))
-        detector.update_background(frame, [])
+        boxes.extend(detector.detect(work, valid))
+        detector.update_background(work, [])
     return fit_height_model(boxes, cfg)
 
 
-def process_camera(video: str | Path, camera: str, out_dir: Path, config: Mapping, debug_video: bool = False) -> CameraResult:
-    """Chạy C → D trên một video; trả về các dòng track (frame, id, state, x, y, w, h, n_points)."""
+def process_camera(video: str | Path, camera: str, out_dir: Path, config: Mapping, debug_video: bool = False,
+                   max_frames: int | None = None) -> CameraResult:
+    """Chạy C → D trên một video; trả về các dòng track (frame, id, state, x, y, w, h, n_points).
+
+    `max_frames`: chỉ xử lý bấy nhiêu frame đầu (để chạy thử nhanh hoặc test); None = cả video.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     capture = cv2.VideoCapture(str(video))
     fps = capture.get(cv2.CAP_PROP_FPS) or 30.0
@@ -84,17 +106,21 @@ def process_camera(video: str | Path, camera: str, out_dir: Path, config: Mappin
         tracks_out.writerow(["frame", "track_id", "state", "x", "y", "w", "h", "n_points"])
         detections_out = csv.writer(detections_file)
         detections_out.writerow(["frame", "x", "y", "w", "h", "area"])
-        for frame_index, frame in iter_video(video):
-            boxes = detector.detect(frame)
-            detections_out.writerows([(frame_index, *box, box[2] * box[3]) for box in boxes])
-            tracks = tracker.update(frame, boxes, detector.last_mask)
-            detector.update_background(frame, [t.box for t in tracks if t.state in ACTIVE_STATES])
+        stabilizer = make_stabilizer(config)
+        original = stabilizer.to_original if stabilizer else (lambda box: tuple(box))
+        for frame_index, frame, work, valid in stable_frames(video, stabilizer):
+            if max_frames is not None and frame_index >= max_frames:
+                break
+            boxes = detector.detect(work, valid)
+            detections_out.writerows([(frame_index, *original(box), box[2] * box[3]) for box in boxes])
+            tracks = tracker.update(work, boxes, detector.last_mask)
+            detector.update_background(work, [t.box for t in tracks if t.state in ACTIVE_STATES])
             for track in tracks:
-                row = (frame_index, track.id, track.state, *track.box, len(track.points))
+                row = (frame_index, track.id, track.state, *original(track.box), len(track.points))
                 tracks_out.writerow(row)
                 result.rows.append(row)
             if writer_video is not None:
-                writer_video.write(draw_tracks(frame, tracks))
+                writer_video.write(draw_tracks(frame, tracks, original))
     if writer_video is not None:
         writer_video.release()
     return result

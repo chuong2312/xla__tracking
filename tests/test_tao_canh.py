@@ -1,28 +1,29 @@
-"""Test tạo thư mục cảnh: chép video .mp4, ghi lại video định dạng khác thành .mp4."""
-import cv2
-import numpy as np
+"""Test tạo thư mục cảnh từ video thật của nhóm: chép nguyên file, giữ đuôi gốc, không mã hóa lại."""
+import pytest
 
+from du_lieu_that import LAB4P_VIDEOS
+from src.common.utils import camera_video
 from tools.tao_canh import place
 
 
-def _write_video(path, fourcc, frames=5):
-    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*fourcc), 10.0, (64, 48))
-    for i in range(frames):
-        writer.write(np.full((48, 64, 3), i * 40, dtype=np.uint8))
-    writer.release()
+def _need_videos():
+    if not all(video.exists() for video in LAB4P_VIDEOS[:2]):
+        pytest.skip("Thiếu video thật trong data/goc/epfl_lab4p (xem data/README.md)")
 
 
-def test_mp4_is_copied(tmp_path):
-    source = tmp_path / "a.mp4"
-    _write_video(source, "mp4v")
-    place(source, tmp_path / "scene" / "cam_a")
-    target = tmp_path / "scene" / "cam_a" / "video.mp4"
+def test_video_is_copied_with_its_own_extension(tmp_path):
+    _need_videos()
+    source = LAB4P_VIDEOS[0]
+    target = place(source, tmp_path / "canh" / "cam_a")
+    assert target.name == "video.avi"
+    assert camera_video(tmp_path / "canh" / "cam_a") == target
     assert target.read_bytes() == source.read_bytes()
 
 
-def test_avi_is_reencoded_to_mp4(tmp_path):
-    source = tmp_path / "b.avi"
-    _write_video(source, "MJPG", frames=7)
-    place(source, tmp_path / "scene" / "cam_b")
-    capture = cv2.VideoCapture(str(tmp_path / "scene" / "cam_b" / "video.mp4"))
-    assert int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) == 7
+def test_new_video_replaces_the_old_one(tmp_path):
+    _need_videos()
+    place(LAB4P_VIDEOS[0], tmp_path / "cam_a")
+    place(LAB4P_VIDEOS[1], tmp_path / "cam_a")
+    files = list((tmp_path / "cam_a").iterdir())
+    assert [path.name for path in files] == ["video.avi"]
+    assert files[0].read_bytes() == LAB4P_VIDEOS[1].read_bytes()

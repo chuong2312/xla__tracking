@@ -13,6 +13,10 @@
      vào nền (XLA 2.2), còn ánh sáng đổi dần thì nền vẫn theo kịp.
 2. "mog2": mô hình nền hỗn hợp Gaussian thích nghi của OpenCV. Chỉ phát hiện foreground,
    không biết đâu là người. learningRate áp cho cả ảnh nên không cập nhật có chọn lọc được.
+   Khởi động nhanh (QĐ-33): trong `mog2_warmup_frames` frame đầu, MOG2 tự chọn tốc độ học
+   (learningRate = −1, tức học nhanh: khoảng 1 / số frame đã thấy) để nhớ cảnh trống; sau đó
+   mới học chậm `mog2_learning_rate` để người đứng yên không bị nuốt vào nền. Không khởi động
+   nhanh thì vài giây đầu khoảng 20% ảnh bị coi là chuyển động và sinh rất nhiều khung ma.
 Cả hai đều trả về mask 0/255 cùng cỡ ảnh.
 """
 from __future__ import annotations
@@ -100,6 +104,8 @@ class Mog2Background:
             history=int(cfg["mog2_history"]), varThreshold=float(cfg["mog2_var_threshold"]), detectShadows=True
         )
         self._rate = float(cfg["mog2_learning_rate"])
+        self._warmup = int(cfg["mog2_warmup_frames"])
+        self._seen = 0
 
     @property
     def ready(self) -> bool:
@@ -107,8 +113,13 @@ class Mog2Background:
         return True
 
     def apply(self, frame_bgr: np.ndarray) -> np.ndarray:
-        """Giữ pixel bằng 255 (foreground), bỏ pixel 127 (bóng do MOG2 tự đánh dấu)."""
-        raw = self._model.apply(frame_bgr, learningRate=self._rate)
+        """Giữ pixel bằng 255 (foreground), bỏ pixel 127 (bóng do MOG2 tự đánh dấu).
+
+        `mog2_warmup_frames` frame đầu học nhanh (learningRate = −1), sau đó học chậm (QĐ-33).
+        """
+        rate = -1.0 if self._seen < self._warmup else self._rate
+        self._seen += 1
+        raw = self._model.apply(frame_bgr, learningRate=rate)
         return np.where(raw == 255, 255, 0).astype(np.uint8)
 
     def update(self, frame_bgr: np.ndarray, exclude_mask: np.ndarray) -> None:

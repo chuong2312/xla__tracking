@@ -6,10 +6,13 @@
 ## Chạy
 
 ```bash
-python run.py --scene data/synthetic_v2/s2 --debug-video
+python run.py --scene data/canh/epfl_lab4p_c0_c1 --debug-video
+python run.py --scene data/canh/epfl_lab4p_c0_c1 --max-frames 300     # chạy thử nhanh 300 frame đầu
 ```
 
-Lệnh này chạy trên thư mục cảnh có `cam_a/video.mp4` và `cam_b/video.mp4`. Kết quả ghi vào `outputs/he_thong/<cảnh>/`. Một cảnh 12 giây với 2 camera mất khoảng 10–15 giây.
+Lệnh này chạy trên một thư mục cảnh có `cam_a/video.<đuôi>` (và `cam_b/video.<đuôi>` nếu có camera thứ hai), xem
+[data/README.md](../data/README.md). Kết quả ghi vào `outputs/he_thong/<cảnh>/`. Một cảnh dài khoảng 2,6 phút
+với 2 camera mất khoảng 3–5 phút. Chỉ dùng video thật của nhóm (QĐ-31, QĐ-32).
 
 ## Hệ thống làm gì, theo thứ tự
 
@@ -43,66 +46,32 @@ Track do chương trình tự tạo, nên phải gắn mỗi track với một n
 
 Bám người được chấm hai lần: trước và sau khi nối tracklet, để thấy bước nối giúp được bao nhiêu.
 
-## Kết quả trên video tổng hợp hành lang
+## Kết quả trên video của nhóm (QĐ-32)
 
-### Mặc định hiện tại: MOG2 quên chậm + gộp mảnh theo chiều cao (QĐ-25, QĐ-26, QĐ-27, QĐ-28)
+Video hiện có là bộ EPFL phòng thí nghiệm 4 người, 4 camera, **chưa có đáp án**. Vì vậy chưa tính được MOTA,
+IDF1 hay số người ghép đúng; chỉ đếm được (`outputs/he_thong/<cảnh>/`, chạy ngày 2026-11-23):
 
-| Cảnh | MOTA A / B (sau khi nối) | IDF1 A / B: trước → sau khi nối | Nhận dạng lại: ngoại hình / + sàn |
-|---|---|---|---|
-| `s1` (đi thưa) | 0,94 / 0,84 | 0,97 → 0,97 / 0,86 → 0,86 | 4/4 / 4/4 |
-| `s2` (cắt nhau) | 0,40 / 0,51 | 0,44 → 0,51 / 0,62 → 0,72 | **2/4 / 2/4** |
-| `s3` (đứng yên) | 0,93 / 0,82 | 0,97 → 0,97 / 0,86 → 0,86 | 4/4 / 4/4 |
-| `s4` (mặc giống) | 0,56 / 0,68 | 0,58 → 0,77 / 0,78 → 0,78 | 4/4 / 4/4 |
-| `s5` (đi thành nhóm) | 0,94 / 0,93 | 0,97 → 0,97 / 0,97 → 0,97 | 4/4 / 4/4 |
+| Cảnh | Camera | Khung tìm được mỗi frame | Track mỗi frame | Số ID: gốc → sau khi nối | Người giữ tên lâu nhất |
+|---|---|---|---|---|---|
+| `epfl_lab4p_c0_c1` | A / B | 3,15 / 3,38 | 3,24 / 3,19 | 95 → 42 / 81 → 26 | 1904 / 1523 frame |
+| `epfl_lab4p_c2_c3` | A / B | 3,01 / 2,97 | 3,17 / 3,00 | 111 → 56 / 156 → 75 | 1438 / 1551 frame |
 
-Trung bình 10 camera: MOTA 0,755, IDF1 0,836. So với trừ nền trung vị (bảng dưới, MOTA 0,683, IDF1 0,820): tốt hơn ở `s1`, `s3`, `s4`, `s5`; nhận dạng lại `s4` chỉ dùng ngoại hình đạt 4/4. Điểm yếu còn lại là `s2`: hai người đi ngược chiều cắt nhau, nhận dạng lại 2/4.
-
-Các bước trung gian (trung bình MOTA / IDF1): MOG2 0,718 / 0,814 → + gộp mảnh theo chiều cao 0,723 / 0,822 → + chỉ tạo track từ khung đủ cao 0,723 / 0,822 → + quên nền chậm 0,755 / 0,836.
-
-### Trước đó: trừ nền trung vị, chưa gộp mảnh
-
-| Cảnh | MOTA A / B (sau khi nối) | IDF1 A / B: trước → sau khi nối | Nhận dạng lại: ngoại hình / + sàn |
-|---|---|---|---|
-| `s1` (đi thưa) | 0,86 / 0,84 | 0,93 → 0,93 / 0,85 → 0,85 | 4/4 / 4/4 |
-| `s2` (cắt nhau) | 0,44 / 0,58 | 0,64 → 0,65 / **0,65 → 0,78** | 4/4 / 4/4 |
-| `s3` (đứng yên) | 0,94 / 0,75 | 0,97 → 0,97 / 0,88 → 0,88 | 4/4 / 4/4 |
-| `s4` (mặc giống) | 0,32 / 0,69 | **0,57 → 0,62** / 0,78 → 0,78 | **2/4 / 4/4** |
-| `s5` (đi thành nhóm) | 0,69 / 0,83 | 0,85 → 0,85 / 0,92 → 0,92 | 4/4 / 4/4 |
-
-Kết quả trên là sau khi sửa lỗi tráo tên (QĐ-24). Trước khi sửa: `s2` cam B IDF1 0,66, `s3` cam B 0,80, `s4` cam B 0,69, và `s4` nhận dạng lại chỉ 1/4 / 1/4.
-
-Với khung đáp án (chế độ oracle), nhận dạng lại ghép đúng 4/4 ở **cả 5 cảnh**.
+Ghép người giữa hai camera: chưa có đáp án, nên được soát bằng vị trí chân trên bản đồ sàn EPFL (QĐ-35). Kết quả
+hiện tại cho thấy ghép bằng ngoại hình gần như ngẫu nhiên: ở c0 + c1, trong 5 cặp kiểm được thì cả 5 cặp đều lệch.
+Xem bảng trong [quyet_dinh_thiet_ke.md](quyet_dinh_thiet_ke.md) (QĐ-35).
 
 **Đọc kết quả thế nào:**
-- Bản thân bước nhận dạng lại làm tốt: oracle đúng 4/4 ở mọi cảnh. Lỗi end-to-end ở `s4` (chỉ ngoại hình 2/4) đến từ **bước bám người** và từ việc hai người mặc giống nhau. Trong hành lang nhìn dọc, ba người đi ngược chiều chồng lên nhau khoảng 3,5 giây; tracker giữ trạng thái "đang dính" quá lâu, mất dấu, rồi tạo ID mới. Track chính của mỗi người vì thế không còn đúng.
-- Nối tracklet giúp được ở `s3` và `s4`, nhưng không nhiều, vì lỗi chính là **tráo tên** (cả hai track vẫn sống, chỉ đổi người), không phải track bị **đứt**.
-- `s1`, `s3 cam_a`, `s5` chạy tốt. `s2`, `s4` là điểm yếu: nhiều người đi ngược chiều trên cùng trục nhìn của camera.
-- **Đây là video tổng hợp; không báo cáo như kết quả thật.**
-
-## Trên video thật EPFL (`data/real/epfl_4p_c0_c1`)
-
-```bash
-python run.py --scene data/real/epfl_4p_c0_c1 --debug-video   # khoảng 2 phút
-```
-
-Chưa có đáp án nên chưa chấm điểm được, chỉ đếm (cảnh có tối đa 4 người):
-
-| | Box mỗi frame A / B | Track đang chạy mỗi frame A / B | Số ID A / B (sau khi nối) |
-|---|---|---|---|
-| MOG2, chưa gộp mảnh | 4,6 / 4,6 | 5,9 / 5,9 | 200 / 203 |
-| MOG2 + gộp mảnh theo chiều cao | 3,5 / 3,5 | 4,8 / 4,6 | 199 / 191 |
-| + chỉ tạo track từ khung đủ cao (QĐ-27) | 3,5 / 3,5 | 3,6 / 3,3 | 85 / 66 |
-| + MOG2 quên nền chậm (QĐ-28) | | 3,7 / 3,5 | **54 / 48** |
-
-Số ID vẫn còn nhiều hơn nhiều so với 4 người, nhưng đã giảm hơn một nửa. Ảnh debug cho thấy hai lỗi còn lại:
-- **Bỏ sót người:** cảnh có tới 4 người, nhưng mỗi frame chỉ có khoảng 2,6 khung đủ cao một người. Người đứng yên giờ đã được giữ (QĐ-28); người mặc đồ tối đi trước nền tối thì vẫn chỉ lộ cái đầu.
-- **Vẫn còn vài track chỉ ôm cái đầu:** chúng được tạo lúc người ở sát mép ảnh (được miễn xét chiều cao), rồi sống tiếp. Muốn hiệu chỉnh tham số cho video thật thì cần đáp án, ít nhất ở một số frame mốc (`tools/annotate.py`).
-
-**Nhận dạng lại trên EPFL** (chưa có đáp án nên chưa biết đúng hay sai, chỉ đếm): homography sàn lấy từ file hiệu chỉnh của EPFL ([02](02_homography_san.md)). Trong 102 track đủ dài, chỉ dùng ngoại hình ghép được 26 cặp A ↔ B; thêm vị trí sàn ghép được 29 cặp. Số cặp nhiều hơn 4 người vì mỗi người vẫn còn bị tách thành nhiều track.
-
-Muốn chỉnh tham số cho hệ thống: xem [14](14_hieu_chinh_tham_so.md).
+- Cảnh có tối đa 4 người mà mỗi camera vẫn có 26–75 tên. Một người bị tách thành nhiều đoạn track: khi đi qua
+  nhau, khi mặc đồ tối trước nền tối, khi ra vào mép khung. Nối tracklet đã gộp được khoảng một nửa số đoạn.
+- Có người được giữ tên liền tới 1500–1900 frame, tức hơn 1 phút.
+- Những gì đo được mà không cần đáp án (khung đúng cỡ người, màu áo…) ở [15](15_du_lieu_that_va_dap_an.md).
 
 ## Hướng cải thiện tiếp
 
-- Giữ đúng tên khi nhiều người chồng lên nhau lâu (`s2`, `s4` camera A vẫn yếu). Đã thử dùng màu khi ghép bình thường và so khớp ảnh mẫu trong cụm, cả hai đều không giúp được ([11](11_tracker_moi.md)); cần cách khác, ví dụ tách cụm theo chiều sâu (ai đứng trước, ai đứng sau).
-- Hiệu chỉnh tham số trên video dev thật.
+1. **Khoanh đáp án** cho một đoạn video của nhóm (`tools/annotate.py`, [15](15_du_lieu_that_va_dap_an.md)), để chấm
+   được MOTA, IDF1 và nhận dạng lại thật.
+2. **Hiệu chỉnh lại tham số** khi đã có đáp án (`python -m tools.hieu_chinh`, [14](14_hieu_chinh_tham_so.md)). Nhiều
+   ngưỡng được chọn trên video máy vẽ trước đây.
+3. **Ghép người giữa hai camera dựa nhiều hơn vào vị trí sàn**: ở ảnh 360×288, điểm đặc trưng SIFT khớp ít (6–9 cặp
+   cho cùng một người) và màu áo phân biệt kém.
+4. **Giữ đúng tên khi nhiều người chồng lên nhau lâu.**

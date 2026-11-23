@@ -1,16 +1,18 @@
-"""Ảnh minh họa cho ghép cặp Hungarian (src/common/assignment.py).
+"""Ảnh minh họa cho ghép cặp Hungarian (src/common/assignment.py) trên video thật của nhóm.
 
-Cách dùng:
-    python -m tools.explain_assignment --scene data/synthetic_v2/s2 --camera cam_b --frame 188 --out outputs/explain/ghep_cap
+Cách dùng (chạy hệ thống trước để có tracks.csv và detections.csv):
+    python run.py --scene data/canh/epfl_lab4p_c0_c1
+    python -m tools.explain_assignment --run outputs/he_thong/epfl_lab4p_c0_c1 --scene data/canh/epfl_lab4p_c0_c1 --frame 800
 
-Giả lập một bước của tracker: "box dự đoán" lấy từ đáp án của vài frame trước
-(như thể đoán vị trí cũ), "box phát hiện" lấy từ đáp án của frame hiện tại.
-Ảnh bên trái vẽ hai loại box và các cặp được ghép; ảnh bên phải là bảng IoU,
-ô có viền là cặp Hungarian chọn, ô ghi "cấm" là cặp có IoU dưới ngưỡng.
+Mô phỏng một bước của tracker bằng kết quả thật: "box dự đoán" là khung các track đã xác nhận ở `--lag` frame
+trước (như thể tracker đoán người vẫn ở chỗ cũ), "box phát hiện" là khung bước tìm người trả về ở frame hiện tại.
+Ảnh trái vẽ hai loại box và các cặp được ghép; ảnh phải là bảng IoU, ô viền đỏ là cặp Hungarian chọn, ô "cấm"
+là cặp có IoU dưới ngưỡng `people_tracker.iou_gate`.
 """
 from __future__ import annotations
 
 import argparse
+import csv
 from pathlib import Path
 
 import cv2
@@ -23,15 +25,23 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
 from src.common.assignment import assign, iou_cost  # noqa: E402
+from src.common.utils import camera_video  # noqa: E402
 from tools.calibrate_floor import first_frame  # noqa: E402
-from tools.verify_gt import read_gt  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def boxes_at(rows, frame: int) -> list[tuple[int, tuple[int, int, int, int]]]:
-    """Các (gt_id, box) của một frame."""
-    return [(row[1], tuple(row[2:6])) for row in rows if row[0] == frame]
+def track_boxes(tracks_csv: Path, frame: int) -> list[tuple[int, tuple[int, int, int, int]]]:
+    """Các (track id, box) của track đã xác nhận ở một frame."""
+    with tracks_csv.open(encoding="utf-8") as stream:
+        return [(int(r["track_id"]), tuple(int(r[k]) for k in "xywh")) for r in csv.DictReader(stream)
+                if int(r["frame"]) == frame and r["state"] == "confirmed"]
+
+
+def detection_boxes(detections_csv: Path, frame: int) -> list[tuple[int, int, int, int]]:
+    """Các box bước tìm người trả về ở một frame."""
+    with detections_csv.open(encoding="utf-8") as stream:
+        return [tuple(int(r[k]) for k in "xywh") for r in csv.DictReader(stream) if int(r["frame"]) == frame]
 
 
 def center(box) -> tuple[float, float]:
@@ -43,24 +53,26 @@ def center(box) -> tuple[float, float]:
 def main() -> None:
     """Vẽ ảnh minh họa ghép cặp cho một frame."""
     parser = argparse.ArgumentParser(description="Minh họa ghép cặp Hungarian")
-    parser.add_argument("--scene", type=Path, default=Path("data/synthetic_v2/s2"))
-    parser.add_argument("--camera", default="cam_b")
-    parser.add_argument("--frame", type=int, default=188)
-    parser.add_argument("--lag", type=int, default=4, help="box dự đoán lấy từ đáp án cách bao nhiêu frame trước")
+    parser.add_argument("--run", type=Path, default=Path("outputs/he_thong/epfl_lab4p_c0_c1"), help="thư mục kết quả run.py")
+    parser.add_argument("--scene", type=Path, default=Path("data/canh/epfl_lab4p_c0_c1"))
+    parser.add_argument("--camera", default="cam_a")
+    parser.add_argument("--frame", type=int, default=800)
+    parser.add_argument("--lag", type=int, default=5, help="box dự đoán lấy từ track cách bao nhiêu frame trước")
     parser.add_argument("--out", type=Path, default=Path("outputs/explain/ghep_cap"))
     args = parser.parse_args()
-    min_iou = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text(encoding="utf-8"))["tracker"]["iou_gate"]
-    rows = read_gt(args.scene / args.camera / "gt_tracking.csv")
-    predicted = boxes_at(rows, args.frame - args.lag)
-    detected = [box for _, box in boxes_at(rows, args.frame)][::-1]
+    min_iou = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text(encoding="utf-8"))["people_tracker"]["iou_gate"]
+    predicted = track_boxes(args.run / args.camera / "tracks.csv", args.frame - args.lag)
+    detected = detection_boxes(args.run / args.camera / "detections.csv", args.frame)
+    if not predicted or not detected:
+        raise SystemExit("Không có track hoặc khung phát hiện ở frame đã chọn; chạy run.py trước hoặc chọn frame khác.")
     cost = iou_cost([box for _, box in predicted], detected, min_iou)
     pairs = assign(cost, max_cost=1.0 - min_iou)
     overlaps = np.where(np.isfinite(cost), 1.0 - cost, 0.0)
 
     figure, (left, right) = plt.subplots(1, 2, figsize=(14, 5.5), gridspec_kw={"width_ratios": [1.6, 1]})
-    image = first_frame(str(args.scene / args.camera / "video.mp4"), args.frame, None)
+    image = first_frame(str(camera_video(args.scene / args.camera)), args.frame, None)
     left.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    for row_index, (gt_id, box) in enumerate(predicted):
+    for row_index, (_, box) in enumerate(predicted):
         left.add_patch(Rectangle(box[:2], box[2], box[3], fill=False, color="deepskyblue", linestyle="--", linewidth=2))
         left.text(box[0], box[1] - 4, f"track {row_index}", color="deepskyblue", fontsize=9)
     for col_index, box in enumerate(detected):

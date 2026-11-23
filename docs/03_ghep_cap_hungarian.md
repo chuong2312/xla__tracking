@@ -48,15 +48,15 @@ Ví dụ này có trong `tests/test_assignment.py`.
 | Tham số | Ý nghĩa |
 |---|---|
 | `max_cost` (đối số của hàm) | Cặp có chi phí lớn hơn bị bỏ sau khi ghép |
-| `tracker.iou_gate` (0.1) | Dùng trong ảnh minh họa: IoU dưới mức này thì cấm ghép |
+| `people_tracker.iou_gate` | Dùng trong ảnh minh họa: IoU dưới mức này thì cấm ghép |
 
 ## Ảnh minh họa
 
-`python -m tools.explain_assignment` sinh ảnh `outputs/explain/ghep_cap/s2_cam_b_frame174.png`:
+`python -m tools.explain_assignment` sinh ảnh trong `outputs/explain/ghep_cap/` từ video thật có đáp án (mặc định EPFL phòng thí nghiệm, camera 0, frame 1250; box dự đoán lấy từ đáp án 25 frame trước):
 - **Bên trái:** box dự đoán (nét đứt), box phát hiện (nét liền), và đường xanh nối các cặp được ghép.
 - **Bên phải:** bảng IoU. Ô viền đỏ là cặp được chọn, ô "cấm" là cặp có IoU dưới ngưỡng.
 
-Ở frame này, track 1 có tới 3 box được phép ghép (IoU 0,12; 0,42; 0,16). Hungarian chọn box có IoU 0,42 mà không làm hỏng cặp của người khác.
+Khi nhiều người đứng gần nhau, một track có thể có vài box được phép ghép. Hungarian chọn cách ghép có tổng chi phí nhỏ nhất cho cả bảng, nên không làm hỏng cặp của người khác.
 
 ## Khi nào hỏng
 
